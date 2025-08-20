@@ -1,0 +1,10 @@
+name: Equidna
+targets:
+  Movies:
+    type: application
+    platform: iOS
+    sources: ["Equidna"]
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: gardinidev.Equidna
