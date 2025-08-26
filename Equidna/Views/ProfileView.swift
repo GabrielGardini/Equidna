@@ -7,6 +7,8 @@ struct ProfileView: View {
 
     var body: some View {
         VStack(spacing: 20) {
+            
+
             if viewModel.isLoading {
                 ProgressView("Carregando...")
             } else if let user = viewModel.user {

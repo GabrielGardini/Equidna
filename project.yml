@@ -7,7 +7,7 @@ settings:
   SWIFT_VERSION: 5.0
   IPHONEOS_DEPLOYMENT_TARGET: "18.4"
 targets:
- Equidna:
+ EquidnaApp:
   type: application
   platform: iOS
   sources:
@@ -15,16 +15,27 @@ targets:
   resources:
    - path: Equidna/Assets.xcassets
    - path: Equidna/Base.lproj
+  entitlements:
+    path: Equidna/Equidna.entitlements
+    properties:
+     aps-environment: development
+     com.apple.developer.icloud-container-identifiers:
+        [iCloud.Gardinidev.EquidnaApp]
+     com.apple.developer.icloud-services:
+        [CloudKit]
+    # test:
+    #  testinho: ABC
+    #  testão: DEF
   settings:
    base:
     INFOPLIST_KEY_UILaunchScreen_Generation: YES
-    PRODUCT_BUNDLE_IDENTIFIER: gardinidev.Equidna
+    PRODUCT_BUNDLE_IDENTIFIER: gardinidev.EquidnaApp
     GENERATE_INFOPLIST_FILE: YES
     ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     # Display name do app (pode trocar depois se quiser outro)
     PRODUCT_NAME: Equidna
   dependencies: []
- EquidnaTests:
+EquidnaTests:
   type: bundle.unit-test
   platform: iOS
   sources:
@@ -34,4 +45,5 @@ targets:
     GENERATE_INFOPLIST_FILE: YES
     PRODUCT_BUNDLE_IDENTIFIER: gardinidev.EquidnaTests
   dependencies:
-   - target: Equidna
+   - target: EquidnaApp
+
