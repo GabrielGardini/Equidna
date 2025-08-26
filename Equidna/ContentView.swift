@@ -6,19 +6,20 @@
 //
 
 import SwiftUI
+import CloudKit
 
 struct ContentView: View {
-    var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
-    }
-}
+    @EnvironmentObject var userManager: UserManager
 
-#Preview {
-    ContentView()
+    var body: some View {
+        Group {
+            if userManager.isLoading {
+                ProgressView("Conectando ao iCloud...")
+            } else if let user = userManager.currentUser {
+                ProfileView(userID: user.id)
+            } else if let errorMessage = userManager.errorMessage {
+                Text("Erro: \(errorMessage)")
+            }
+        }
+    }
 }

@@ -9,9 +9,15 @@ import SwiftUI
 
 @main
 struct EquidnaApp: App {
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
+    @StateObject private var userManager = UserManager()
+
+        var body: some Scene {
+            WindowGroup {
+                ContentView()
+                    .environmentObject(userManager)
+                    .onAppear {
+                        userManager.setupCurrentUser()
+                    }
+            }
         }
-    }
 }
