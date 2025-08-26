@@ -1,24 +1,24 @@
+////
+////  ContentView.swift
+////  Equidna
+////
+////  Created by Gabriel Gardini on 14/08/25.
+////
 //
-//  ContentView.swift
-//  Equidna
+//import SwiftUI
 //
-//  Created by Gabriel Gardini on 14/08/25.
+//struct ContentView: View {
+//    var body: some View {
+//        VStack {
+//            Image(systemName: "globe")
+//                .imageScale(.large)
+//                .foregroundStyle(.tint)
+//            Text("Hello, world!")
+//        }
+//        .padding()
+//    }
+//}
 //
-
-import SwiftUI
-
-struct ContentView: View {
-    var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
-    }
-}
-
-#Preview {
-    ContentView()
-}
+//#Preview {
+//    ContentView()
+//}

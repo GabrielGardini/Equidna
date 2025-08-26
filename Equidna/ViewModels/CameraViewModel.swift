@@ -18,7 +18,7 @@ struct MediaPicker: UIViewControllerRepresentable {
 
     var sourceType: UIImagePickerController.SourceType = .camera
     
-    var videoTimeLimit: TimeInterval = 30.0
+    var videoTimeLimit: TimeInterval = 15.0
 
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let mediaPicker = UIImagePickerController()
@@ -27,6 +27,8 @@ struct MediaPicker: UIViewControllerRepresentable {
         mediaPicker.mediaTypes = [UTType.image.identifier, UTType.movie.identifier]
 
         mediaPicker.delegate = context.coordinator
+        
+        mediaPicker.videoQuality = .typeHigh
         return mediaPicker
     }
 
