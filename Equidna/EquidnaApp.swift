@@ -7,8 +7,8 @@
 
 import SwiftUI
 
-@main
 struct EquidnaApp: App {
+
     @StateObject private var userManager = UserManager()
 
         var body: some Scene {

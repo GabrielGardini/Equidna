@@ -1,9 +1,12 @@
+////
+////  ContentView.swift
+////  Equidna
+////
+////  Created by Gabriel Gardini on 14/08/25.
+////
 //
-//  ContentView.swift
-//  Equidna
-//
-//  Created by Gabriel Gardini on 14/08/25.
-//
+
+
 
 import SwiftUI
 import CloudKit
@@ -23,3 +26,4 @@ struct ContentView: View {
         }
     }
 }
+
