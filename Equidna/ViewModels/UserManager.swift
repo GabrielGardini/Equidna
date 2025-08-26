@@ -1,5 +1,6 @@
+import SwiftUI
 import CloudKit
-
+import Foundation
 
 class UserManager: ObservableObject {
     @Published var currentUser: User?
@@ -7,6 +8,8 @@ class UserManager: ObservableObject {
     @Published var errorMessage: String?
 
     private let database = CKContainer.default().publicCloudDatabase
+
+    // MARK: - Public API
 
     func setupCurrentUser() {
         isLoading = true
@@ -29,6 +32,8 @@ class UserManager: ObservableObject {
         }
     }
 
+    // MARK: - Fetch
+
     private func fetchUser(by userRecordID: CKRecord.ID) {
         print("🔎 Buscando usuário (User Record): \(userRecordID.recordName)")
 
@@ -42,23 +47,22 @@ class UserManager: ObservableObject {
                     print("❌ Query 'User' falhou: \(error.code) – \(error.localizedDescription)")
                     print("ℹ️ userInfo:", error.userInfo)
 
-                    // 1) Tipos de erro que tratamos como "não achou" → criar
+                    // Tratar como “não achou” quando for erro de schema/índice ausente etc.
                     let msg = error.localizedDescription.lowercased()
                     let treatAsNotFound =
-                        msg.contains("did not find record type") ||   // schema ausente
+                        msg.contains("did not find record type") ||
                         msg.contains("unknown record type")      ||
-                        msg.contains("not queryable")            ||   // falta query index
+                        msg.contains("not queryable")            ||
                         error.code == .unknownItem               ||
                         error.code == .serverRejectedRequest     ||
                         error.code == .invalidArguments
 
                     if treatAsNotFound {
-                        print("➡️ caindo para createUser() por erro tratável")
+                        print("➡️ createUser() por erro tratável")
                         self.createUser(userRecordID: userRecordID)
                         return
                     }
 
-                    // 2) Erros realmente críticos: exibe e sai
                     self.isLoading = false
                     self.errorMessage = "Erro ao buscar usuário: \(error.localizedDescription)"
                     return
@@ -68,7 +72,7 @@ class UserManager: ObservableObject {
                 print("✅ Query OK, registros retornados: \(count)")
 
                 if let record = results?.first, let user = User(record: record) {
-                    print("🙋‍♂️ Usuário existente encontrado: \(record.recordID.recordName)")
+                    print("🙋‍♂️ Usuário existente: \(record.recordID.recordName)")
                     self.currentUser = user
                     self.isLoading = false
                 } else {
@@ -79,56 +83,85 @@ class UserManager: ObservableObject {
         }
     }
 
+    // MARK: - Create
 
-    
-    
     private func createUser(userRecordID: CKRecord.ID) {
         print("🧩 Criando User para: \(userRecordID.recordName)")
 
-        let newUserID = CKRecord.ID(recordName: UUID().uuidString)
-        let userRef = CKRecord.Reference(recordID: userRecordID, action: .none)
+        // 1) Buscar nome do iCloud (se autorizado). Se não vier, usamos fallback.
+        fetchICloudFullName(for: userRecordID) { fullName in
+            let newUserID = CKRecord.ID(recordName: UUID().uuidString)
+            let userRef = CKRecord.Reference(recordID: userRecordID, action: .none)
 
-        let record = CKRecord(recordType: "User", recordID: newUserID)
-        record["fullName"] = "Nome do Usuário" as CKRecordValue
-        record["userID"] = userRecordID.recordName as CKRecordValue
-        record["inviteCode"] = String(UUID().uuidString.prefix(6)).uppercased() as CKRecordValue
-        record["streak"] = 0 as CKRecordValue
-        record["userRef"] = userRef as CKRecordValue
+            // 2) Montar o record SEM listas vazias
+            let record = CKRecord(recordType: "User", recordID: newUserID)
+            record["fullName"] = (fullName ?? "Nome do Usuário") as CKRecordValue
+            record["userID"] = userRecordID.recordName as CKRecordValue
+            record["inviteCode"] = String(UUID().uuidString.prefix(6)).uppercased() as CKRecordValue
+            record["streak"] = 0 as CKRecordValue
+            record["userRef"] = userRef as CKRecordValue
+            // NÃO enviar friends/predefinedMessages quando vazios
 
-        database.save(record) { savedRecord, error in
-            DispatchQueue.main.async {
-                if let ckErr = error as? CKError {
-                    print("❌ Save falhou: \(ckErr.code) – \(ckErr.localizedDescription)")
-                    print("ℹ️ userInfo:", ckErr.userInfo)
-                    self.isLoading = false
-                    self.errorMessage = "Erro ao criar usuário: \(ckErr.localizedDescription)"
-                    return
-                }
-                guard let saved = savedRecord else {
-                    self.isLoading = false
-                    self.errorMessage = "Erro ao criar usuário: resposta sem record"
-                    return
-                }
-
-                print("✅ SALVO: \(saved.recordID.recordName) zone=\(saved.recordID.zoneID.zoneName) db=PUBLIC")
-
-                // read-back para confirmar
-                self.database.fetch(withRecordID: saved.recordID) { fetched, fetchErr in
-                    DispatchQueue.main.async {
-                        if let fetchErr = fetchErr {
-                            print("❌ Fetch pós-save falhou:", fetchErr.localizedDescription)
-                        } else {
-                            print("🔁 Fetch pós-save OK. Campos:", fetched?.allKeys() ?? [])
-                        }
-                        if let user = fetched.flatMap(User.init(record:)) {
-                            self.currentUser = user
-                        }
+            self.database.save(record) { savedRecord, error in
+                DispatchQueue.main.async {
+                    if let ckErr = error as? CKError {
+                        print("❌ Save falhou: \(ckErr.code) – \(ckErr.localizedDescription)")
+                        print("ℹ️ userInfo:", ckErr.userInfo)
                         self.isLoading = false
+                        self.errorMessage = "Erro ao criar usuário: \(ckErr.localizedDescription)"
+                        return
+                    }
+                    guard let saved = savedRecord else {
+                        self.isLoading = false
+                        self.errorMessage = "Erro ao criar usuário: resposta sem record"
+                        return
+                    }
+
+                    print("✅ SALVO: \(saved.recordID.recordName) zone=\(saved.recordID.zoneID.zoneName) db=PUBLIC")
+
+                    // 3) Read-back para confirmar e popular currentUser
+                    self.database.fetch(withRecordID: saved.recordID) { fetched, fetchErr in
+                        DispatchQueue.main.async {
+                            if let fetchErr = fetchErr {
+                                print("❌ Fetch pós-save falhou:", fetchErr.localizedDescription)
+                            } else {
+                                print("🔁 Fetch pós-save OK. Campos:", fetched?.allKeys() ?? [])
+                            }
+                            if let user = fetched.flatMap(User.init(record:)) {
+                                self.currentUser = user
+                            }
+                            self.isLoading = false
+                        }
                     }
                 }
             }
         }
     }
 
+    // MARK: - iCloud Full Name
 
+    /// Pede permissão de User Discoverability e tenta obter o nome do iCloud.
+    /// Retorna `nil` se a permissão for negada/indisponível ou se não houver nome.
+    private func fetchICloudFullName(for userRecordID: CKRecord.ID,
+                                     completion: @escaping (String?) -> Void) {
+        let container = CKContainer.default()
+
+        container.requestApplicationPermission(.userDiscoverability) { status, err in
+            if let err = err { print("⚠️ userDiscoverability erro:", err.localizedDescription) }
+            guard status == .granted else {
+                completion(nil)   // sem permissão → segue com fallback
+                return
+            }
+
+            container.discoverUserIdentity(withUserRecordID: userRecordID) { identity, _ in
+                if let comps = identity?.nameComponents {
+                    let formatter = PersonNameComponentsFormatter()
+                    let name = formatter.string(from: comps).trimmingCharacters(in: .whitespacesAndNewlines)
+                    completion(name.isEmpty ? nil : name)
+                } else {
+                    completion(nil)
+                }
+            }
+        }
+    }
 }

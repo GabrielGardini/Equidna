@@ -1,15 +1,15 @@
 import CloudKit
 
 struct User {
-    let id: CKRecord.ID                 // ID do seu record "Users"
+    let id: CKRecord.ID
     var fullName: String
-    let userID: String                  // pode manter como cache/visualização
+    let userID: String
     var predefinedMessages: [String]
     var profilePhoto: CKAsset?
     var inviteCode: String
     var friends: [CKRecord.Reference]
     var streak: Int
-    var userRef: CKRecord.Reference?    // <- referência ao User Record (sistema)
+    var userRef: CKRecord.Reference?
 
     init(id: CKRecord.ID = CKRecord.ID(recordName: UUID().uuidString),
          fullName: String,
@@ -54,16 +54,10 @@ struct User {
         record["userID"] = userID as CKRecordValue
         record["inviteCode"] = inviteCode as CKRecordValue
         record["streak"] = streak as CKRecordValue
-
-        if let photo = profilePhoto { record["profilePhoto"] = photo }
-        if let ref = userRef { record["userRef"] = ref as CKRecordValue }
-
-        if !friends.isEmpty {
-            record["friends"] = friends as CKRecordValue        // [CKRecord.Reference]
-        }
-        if !predefinedMessages.isEmpty {
-            record["predefinedMessages"] = predefinedMessages as CKRecordValue  // [String]
-        }
+        if let profilePhoto { record["profilePhoto"] = profilePhoto }
+        if let userRef { record["userRef"] = userRef as CKRecordValue }
+        if !friends.isEmpty { record["friends"] = friends as CKRecordValue }
+        if !predefinedMessages.isEmpty { record["predefinedMessages"] = predefinedMessages as CKRecordValue }
         return record
     }
 }
