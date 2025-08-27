@@ -4,7 +4,7 @@ import PhotosUI
 
 struct ProfileView: View {
     @StateObject var viewModel = ProfileViewModel()
-    let userID: CKRecord.ID // User RecordID (do iCloud) do usuário exibido
+    let userID: CKRecord.ID // User RecordID (do iCloud) OU recordID do tipo `User`
 
     @State private var photoItem: PhotosPickerItem?
 
@@ -45,19 +45,16 @@ struct ProfileView: View {
                             }
                         }
 
-                        // Botão para selecionar nova foto
+                        // Trocar foto
                         PhotosPicker(selection: $photoItem, matching: .images, photoLibrary: .shared()) {
-                            Text("Trocar foto")
-                                .font(.callout)
+                            Text("Trocar foto").font(.callout)
                         }
                         .onChange(of: photoItem) { _, newItem in
                             guard let newItem else { return }
                             Task {
                                 if let data = try? await newItem.loadTransferable(type: Data.self),
                                    let img = UIImage(data: data) {
-                                    await MainActor.run {
-                                        viewModel.selectedImage = img
-                                    }
+                                    await MainActor.run { viewModel.selectedImage = img }
                                 }
                             }
                         }
@@ -66,49 +63,98 @@ struct ProfileView: View {
                         TextField("Nome completo", text: $viewModel.fullNameDraft)
                             .textFieldStyle(.roundedBorder)
 
-                        // Informações extras (somente leitura aqui)
+                        // Infos
                         Text("Streak: \(user.streak) 🔥")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
-
                         Text("Invite Code: \(user.inviteCode)")
                             .font(.footnote)
                             .foregroundColor(.blue)
 
-                        Text("Friends: \(user.friends.count)")
+                        // ✅ contador vindo de Friendship
+                        Text("Friends: \(viewModel.friendsCount)")
                             .font(.footnote)
                             .foregroundColor(.secondary)
 
-                        // Botão salvar
+                        // Salvar alterações
                         Button {
                             viewModel.saveChanges()
                         } label: {
                             if viewModel.isSaving {
-                                ProgressView()
-                                    .progressViewStyle(.circular)
-                                    .frame(maxWidth: .infinity)
+                                ProgressView().frame(maxWidth: .infinity)
                             } else {
-                                Text("Salvar alterações")
-                                    .frame(maxWidth: .infinity)
+                                Text("Salvar alterações").frame(maxWidth: .infinity)
                             }
                         }
                         .buttonStyle(.borderedProminent)
                         .disabled(viewModel.isSaving)
+
+                        Divider().padding(.vertical, 6)
+
+                        // Botão de teste para fetchFriends (não depende do invite code)
+                        Button {
+                            print("➡️ Clicou em Testar fetchFriends")
+                            viewModel.fetchFriends { list in
+                                print(list)
+                                print("🔢 amigos:", list.count)
+                                for item in list {
+                                    print("• \(item.user.fullName) ID: \(item.friendUserID.recordName)")
+                                }
+                            }
+                        } label: {
+                            Text("Testar fetchFriends")
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(viewModel.isLinking)
+
+                        // === Vincular amigo por código ===
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Adicionar amigo por código")
+                                .font(.headline)
+
+                            HStack {
+                                TextField("Código de convite (6 letras/números)", text: $viewModel.inviteCodeInput)
+                                    .textFieldStyle(.roundedBorder)
+                                    .textInputAutocapitalization(.characters)
+                                    .autocorrectionDisabled(true)
+                                    .submitLabel(.go)
+                                    .onSubmit { viewModel.addFriendByInviteCode() }
+
+                                Button {
+                                    viewModel.addFriendByInviteCode()
+                                } label: {
+                                    if viewModel.isLinking {
+                                        ProgressView()
+                                    } else {
+                                        Text("Adicionar")
+                                    }
+                                }
+                                .buttonStyle(.bordered)
+                                .disabled(
+                                    viewModel.isLinking ||
+                                    viewModel.inviteCodeInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                )
+                            }
+
+                            Text("Compartilhe seu código com amigos para se conectarem.")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                        }
                     }
                     .padding()
 
                 } else if let errorMessage = viewModel.errorMessage {
-                    Text("Erro: \(errorMessage)")
-                        .foregroundColor(.red)
+                    Text("Erro: \(errorMessage)").foregroundColor(.red)
                 } else {
-                    Text("Nenhum usuário encontrado")
-                        .foregroundColor(.gray)
+                    Text("Nenhum usuário encontrado").foregroundColor(.gray)
                 }
             }
             .padding()
         }
-        .onAppear {
-            viewModel.fetchUser(userID: userID)
+        .onAppear { viewModel.fetchUser(userID: userID) }
+        // Recarrega contador quando o perfil carregar
+        .onChange(of: viewModel.user?.id) { _, newValue in
+            if newValue != nil { viewModel.refreshFriendsCount() }
         }
         .navigationTitle("Perfil")
         .navigationBarTitleDisplayMode(.inline)

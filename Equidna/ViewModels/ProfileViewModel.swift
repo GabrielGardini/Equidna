@@ -1,35 +1,45 @@
 import SwiftUI
 import CloudKit
 import Foundation
+import UIKit // necessário para UIImage
 
 final class ProfileViewModel: ObservableObject {
+    // Estado principal
     @Published var user: User?
     @Published var isLoading = false
     @Published var isSaving = false
     @Published var errorMessage: String?
 
-    // edição
+    // Edição de perfil
     @Published var fullNameDraft: String = ""
     @Published var selectedImage: UIImage?
 
-    private let database = CKContainer.default().publicCloudDatabase
+    // Convite / amizade
+    @Published var inviteCodeInput: String = ""
+    @Published var isLinking = false
+    @Published var friendsCount: Int = 0
 
+    private let database = CKContainer.default().publicCloudDatabase
+    private let friendshipService = FriendshipService()
+
+    // MARK: - Carregar usuário
     /// Aceita tanto o recordID do seu tipo `User` quanto o User Record ID do iCloud.
     func fetchUser(userID: CKRecord.ID) {
         isLoading = true
         errorMessage = nil
 
         // 1) Tenta tratar como recordID do tipo `User`
-        database.fetch(withRecordID: userID) { record, fetchErr in
+        database.fetch(withRecordID: userID) { record, _ in
             DispatchQueue.main.async {
                 if let rec = record, rec.recordType == "User", let u = User(record: rec) {
                     self.user = u
                     self.fullNameDraft = u.fullName
                     self.isLoading = false
+                    self.refreshFriendsCount()
                     return
                 }
 
-                // 2) Não era um `User` → trata como User Record ID (iCloud) e busca por userRef
+                // 2) Não era um `User` → trata como User Record ID do iCloud (userRef)
                 let ref = CKRecord.Reference(recordID: userID, action: .none)
                 let predicate = NSPredicate(format: "userRef == %@", ref)
                 let query = CKQuery(recordType: "User", predicate: predicate)
@@ -49,13 +59,14 @@ final class ProfileViewModel: ObservableObject {
                         self.user = u
                         self.fullNameDraft = u.fullName
                         self.isLoading = false
+                        self.refreshFriendsCount()
                     }
                 }
             }
         }
     }
 
-    // Salva nome e (opcional) nova foto
+    // MARK: - Salvar nome/foto
     func saveChanges() {
         guard let user = user else { return }
         isSaving = true
@@ -101,6 +112,78 @@ final class ProfileViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Adicionar amigo por código (Friendship-only)
+    func addFriendByInviteCode() {
+        guard let me = user else { return }
+        let code = inviteCodeInput.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        guard !code.isEmpty else {
+            self.errorMessage = "Digite um código de convite."
+            return
+        }
+        guard code != me.inviteCode else {
+            self.errorMessage = "Você não pode usar seu próprio código."
+            return
+        }
+
+        isLinking = true
+        errorMessage = nil
+
+        friendshipService.addFriend(meUserID: me.id, inviteCode: code) { result in
+            DispatchQueue.main.async {
+                self.isLinking = false
+                switch result {
+                case .success:
+                    self.inviteCodeInput = ""
+                    self.refreshFriendsCount()
+                case .failure(let err):
+                    self.errorMessage = err.localizedDescription
+                }
+            }
+        }
+    }
+
+    // MARK: - Contar amizades
+    func refreshFriendsCount() {
+        guard let me = user else { return }
+        friendshipService.countFriendships(of: me.id) { count in
+            DispatchQueue.main.async { self.friendsCount = count }
+        }
+    }
+
+    // MARK: - Listar amigos resolvendo Users
+    func fetchFriends(completion: @escaping ([(friendUserID: CKRecord.ID, user: User)]) -> Void) {
+        guard let me = user else { completion([]); return }
+        friendshipService.fetchFriendships(of: me.id) { [weak self] result in
+            switch result {
+            case .failure:
+                DispatchQueue.main.async { completion([]) }
+            case .success(let pairs):
+                // IDs dos amigos (o "outro" lado de cada par)
+                let otherIDs: [CKRecord.ID] = pairs.map { pair in
+                    pair.userA.recordID == me.id ? pair.userB.recordID : pair.userA.recordID
+                }
+                self?.fetchUsers(with: otherIDs, completion: completion)
+            }
+        }
+    }
+
+    // MARK: - Remover amizade
+    func unfriend(friendUserID: CKRecord.ID, completion: @escaping (Bool) -> Void) {
+        guard let me = user else { completion(false); return }
+        friendshipService.removeFriendship(between: me.id, and: friendUserID) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    self.refreshFriendsCount()
+                    completion(true)
+                case .failure(let e):
+                    self.errorMessage = e.localizedDescription
+                    completion(false)
+                }
+            }
+        }
+    }
+
     // MARK: - Utils
 
     private func writeTempJPEG(image: UIImage, quality: CGFloat) -> URL? {
@@ -115,5 +198,21 @@ final class ProfileViewModel: ObservableObject {
             print("Falha ao escrever JPEG temporário:", error.localizedDescription)
             return nil
         }
+    }
+
+    private func fetchUsers(with ids: [CKRecord.ID],
+                            completion: @escaping ([(friendUserID: CKRecord.ID, user: User)]) -> Void) {
+        guard !ids.isEmpty else { completion([]); return }
+        let op = CKFetchRecordsOperation(recordIDs: ids)
+        var out: [(CKRecord.ID, User)] = []
+        op.perRecordResultBlock = { id, res in
+            if case .success(let rec) = res, let u = User(record: rec) {
+                out.append((id, u))
+            }
+        }
+        op.fetchRecordsResultBlock = { _ in
+            DispatchQueue.main.async { completion(out) }
+        }
+        database.add(op)
     }
 }
