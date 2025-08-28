@@ -19,7 +19,9 @@ struct ContentView: View {
             if userManager.isLoading {
                 ProgressView("Conectando ao iCloud...")
             } else if let user = userManager.currentUser {
-                ProfileView(userID: user.id)
+                NavigationStack{
+                    ProfileView(userID: user.id)
+                }
             } else if let errorMessage = userManager.errorMessage {
                 Text("Erro: \(errorMessage)")
             }
