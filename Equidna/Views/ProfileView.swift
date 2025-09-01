@@ -236,8 +236,9 @@ private struct InfoCard: View {
     let value: String
 
     var body: some View {
-        VStack(spacing: 6) {
-            Text(title).font(.caption)
+        VStack(spacing: 8) {
+            Text(title)
+                .font(.caption)
                 .foregroundColor(.secondary)
             HStack(spacing: 6) {
                 Image(systemName: systemImage).imageScale(.medium)
@@ -246,8 +247,6 @@ private struct InfoCard: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 10)
-        .background(Color(.systemGray6))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
