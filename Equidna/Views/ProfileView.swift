@@ -5,11 +5,141 @@ import UIKit
 
 // MARK: - ProfileView
 
+//struct ProfileView: View {
+//    @StateObject var viewModel = ProfileViewModel()
+//    let userID: CKRecord.ID // User recordID (do tipo `User`) ou User Record ID do iCloud
+//
+//    // Sheets & nav
+//    @State private var showShare = false
+//    @State private var showAddFriend = false
+//    @State private var showEdit = false
+//    @State private var didCopyCode = false
+//
+//    private var displayName: String {
+//        let name = viewModel.fullNameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+//        return name.isEmpty ? "Nome desconhecido" : name
+//    }
+//
+//    var body: some View {
+//            
+//       
+//        ScrollView {
+//            VStack(spacing: 20) {
+//                if viewModel.isLoading {
+//                    ProgressView("Carregando...")
+//                        .padding(.top, 40)
+//                } else if let user = viewModel.user {
+//                    // Avatar
+//                    VStack(spacing: 12) {
+//                        AvatarImage(user: user, selected: viewModel.selectedImage)
+//                            .frame(width: 120, height: 120)
+//                            .clipShape(Circle())
+//                            .shadow(radius: 5)
+//
+//                        Text(displayName)
+//                            .font(.title2)
+//                            .fontWeight(.semibold)
+//
+//                        // Código com copiar (ícone depois do texto)
+//                        Button {
+//                            UIPasteboard.general.string = user.inviteCode
+//                            withAnimation { didCopyCode = true }
+//                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+//                                withAnimation { didCopyCode = false }
+//                            }
+//                        } label: {
+//                            HStack(spacing: 6) {
+//                                Text(user.inviteCode).monospaced()
+//                                Image(systemName: didCopyCode ? "checkmark.circle.fill" : "doc.on.doc")
+//                                    .imageScale(.medium)
+//                            }
+//                            .font(.subheadline)
+//                            .foregroundColor(.blue)
+//                        }
+//                        .buttonStyle(.plain)
+//                    }
+//                    .padding(.top, 8)
+//
+//                    // Cards: Constância / Amigos
+//                    HStack(spacing: 24) {
+//                        InfoCard(title: "Constância",
+//                                 systemImage: "flame",
+//                                 value: "\(user.streak)")
+//                        InfoCard(title: "Amigos",
+//                                 systemImage: "person.2",
+//                                 value: "\(viewModel.friendsCount)")
+//                    }
+//                    .padding(.horizontal)
+//
+//                    // Ações
+//                    VStack(spacing: 10) {
+//                        // Compartilhar perfil
+//                        FullWidthAction(systemImage: "square.and.arrow.up", title: "Compartilhar perfil") {
+//                            showShare = true
+//                        }
+//
+//                        // Adicionar amigo (via código)
+//                        FullWidthAction(systemImage: "plus", title: "Adicionar amigo") {
+//                            showAddFriend = true
+//                        }
+//
+//                        // Lista de amigos
+//                        NavigationLink {
+//                            FriendsListView(viewModel: viewModel)
+//                        } label: {
+//                            RowActionLabel(systemImage: "person.2", title: "Lista de amigos")
+//                        }
+//                        .buttonStyle(.bordered)
+//                        .frame(maxWidth: .infinity)
+//
+//                        // Editar perfil (nome/foto) em modal
+//                        FullWidthAction(systemImage: "pencil", title: "Editar perfil") {
+//                            showEdit = true
+//                        }
+//                    }
+//                    .padding(.horizontal)
+//
+//                } else if let errorMessage = viewModel.errorMessage {
+//                    Text("Erro: \(errorMessage)").foregroundColor(.red)
+//                } else {
+//                    Text("Nenhum usuário encontrado").foregroundColor(.gray)
+//                }
+//            }
+//            .padding(.vertical)
+//        }
+//        .navigationTitle("Perfil")
+//        .navigationBarTitleDisplayMode(.large)
+//        .onAppear { viewModel.fetchUser(userID: userID) }
+//        .onChange(of: viewModel.user?.id) { _, newValue in
+//            if newValue != nil { viewModel.refreshFriendsCount() }
+//        }
+//        .navigationTitle("Perfil")
+//        .navigationBarTitleDisplayMode(.inline)
+//
+//        // MARK: Sheets
+//        .sheet(isPresented: $showShare) {
+//            if let user = viewModel.user {
+//                let text = "Me adiciona no app com meu código: \(user.inviteCode)"
+//                ShareSheet(activityItems: [text])
+//            }
+//        }
+//        .sheet(isPresented: $showAddFriend) {
+//            AddFriendSheet(viewModel: viewModel, user: nil ) { success in
+//                if success { viewModel.refreshFriendsCount() }
+//            }
+//            .presentationDetents([.height(230), .medium])
+//        }
+//        .sheet(isPresented: $showEdit) {
+//            EditProfileSheet(viewModel: viewModel)
+//                .presentationDetents([.medium, .large])
+//        }
+//    }
+//}
+
 struct ProfileView: View {
     @StateObject var viewModel = ProfileViewModel()
-    let userID: CKRecord.ID // User recordID (do tipo `User`) ou User Record ID do iCloud
+    let userID: CKRecord.ID
 
-    // Sheets & nav
     @State private var showShare = false
     @State private var showAddFriend = false
     @State private var showEdit = false
@@ -21,101 +151,16 @@ struct ProfileView: View {
     }
 
     var body: some View {
-            
-       
         ScrollView {
-            VStack(spacing: 20) {
-                if viewModel.isLoading {
-                    ProgressView("Carregando...")
-                        .padding(.top, 40)
-                } else if let user = viewModel.user {
-                    // Avatar
-                    VStack(spacing: 12) {
-                        AvatarImage(user: user, selected: viewModel.selectedImage)
-                            .frame(width: 120, height: 120)
-                            .clipShape(Circle())
-                            .shadow(radius: 5)
-
-                        Text(displayName)
-                            .font(.title2)
-                            .fontWeight(.semibold)
-
-                        // Código com copiar (ícone depois do texto)
-                        Button {
-                            UIPasteboard.general.string = user.inviteCode
-                            withAnimation { didCopyCode = true }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                                withAnimation { didCopyCode = false }
-                            }
-                        } label: {
-                            HStack(spacing: 6) {
-                                Text(user.inviteCode).monospaced()
-                                Image(systemName: didCopyCode ? "checkmark.circle.fill" : "doc.on.doc")
-                                    .imageScale(.medium)
-                            }
-                            .font(.subheadline)
-                            .foregroundColor(.blue)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.top, 8)
-
-                    // Cards: Constância / Amigos
-                    HStack(spacing: 24) {
-                        InfoCard(title: "Constância",
-                                 systemImage: "flame",
-                                 value: "\(user.streak)")
-                        InfoCard(title: "Amigos",
-                                 systemImage: "person.2",
-                                 value: "\(viewModel.friendsCount)")
-                    }
-                    .padding(.horizontal)
-
-                    // Ações
-                    VStack(spacing: 10) {
-                        // Compartilhar perfil
-                        FullWidthAction(systemImage: "square.and.arrow.up", title: "Compartilhar perfil") {
-                            showShare = true
-                        }
-
-                        // Adicionar amigo (via código)
-                        FullWidthAction(systemImage: "plus", title: "Adicionar amigo") {
-                            showAddFriend = true
-                        }
-
-                        // Lista de amigos
-                        NavigationLink {
-                            FriendsListView(viewModel: viewModel)
-                        } label: {
-                            RowActionLabel(systemImage: "person.2", title: "Lista de amigos")
-                        }
-                        .buttonStyle(.bordered)
-                        .frame(maxWidth: .infinity)
-
-                        // Editar perfil (nome/foto) em modal
-                        FullWidthAction(systemImage: "pencil", title: "Editar perfil") {
-                            showEdit = true
-                        }
-                    }
-                    .padding(.horizontal)
-
-                } else if let errorMessage = viewModel.errorMessage {
-                    Text("Erro: \(errorMessage)").foregroundColor(.red)
-                } else {
-                    Text("Nenhum usuário encontrado").foregroundColor(.gray)
-                }
-            }
-            .padding(.vertical)
+            contentView
         }
-        .navigationTitle("Perfil")
-        .navigationBarTitleDisplayMode(.large)
         .onAppear { viewModel.fetchUser(userID: userID) }
         .onChange(of: viewModel.user?.id) { _, newValue in
             if newValue != nil { viewModel.refreshFriendsCount() }
         }
         .navigationTitle("Perfil")
         .navigationBarTitleDisplayMode(.inline)
-
+        
         // MARK: Sheets
         .sheet(isPresented: $showShare) {
             if let user = viewModel.user {
@@ -124,9 +169,9 @@ struct ProfileView: View {
             }
         }
         .sheet(isPresented: $showAddFriend) {
-            AddFriendSheet(viewModel: viewModel) { success in
+            AddFriendSheet(viewModel: viewModel, completion: { success in
                 if success { viewModel.refreshFriendsCount() }
-            }
+            })
             .presentationDetents([.height(230), .medium])
         }
         .sheet(isPresented: $showEdit) {
@@ -134,20 +179,43 @@ struct ProfileView: View {
                 .presentationDetents([.medium, .large])
         }
     }
+    
+    // Variável computada para o conteúdo principal, resolvendo o problema de complexidade
+    @ViewBuilder
+    private var contentView: some View {
+        if viewModel.isLoading {
+            ProgressView("Carregando...")
+                .padding(.top, 40)
+        } else if let user = viewModel.user {
+            UserProfileContent(
+                user: user,
+                viewModel: viewModel,
+                didCopyCode: $didCopyCode,
+                showShare: $showShare,
+                showAddFriend: $showAddFriend,
+                showEdit: $showEdit,
+                displayName: displayName
+            )
+        } else if let errorMessage = viewModel.errorMessage {
+            Text("Erro: \(errorMessage)").foregroundColor(.red)
+        } else {
+            Text("Nenhum usuário encontrado").foregroundColor(.gray)
+        }
+    }
 }
-
 
 // MARK: - Reusable bits
 
 private struct AvatarImage: View {
-    let user: User
+    let user: User?
     let selected: UIImage?
 
     var body: some View {
         Group {
             if let img = selected {
                 Image(uiImage: img).resizable().scaledToFill()
-            } else if let asset = user.profilePhoto,
+            } else if let user = user,
+                      let asset = user.profilePhoto,
                       let url = asset.fileURL,
                       let data = try? Data(contentsOf: url),
                       let ui = UIImage(data: data) {
@@ -217,21 +285,26 @@ private struct RowActionLabel: View {
 struct AddFriendSheet: View {
     @ObservedObject var viewModel: ProfileViewModel
     var completion: (Bool) -> Void
-
+    
     @Environment(\.dismiss) private var dismiss
     @State private var localCode: String = ""
-
+    
     var body: some View {
         NavigationStack {
             VStack(spacing: 16) {
-                Text("Adicionar amigo")
-                    .font(.headline)
-
+                // ! Foto de usuário padrão
+                AvatarImage(user: viewModel.foundUser, selected: nil)
+                    .frame(width: 100, height: 100)
+                    .clipShape(Circle())
+                
+                usernameDisplayOnAddSheet(user: viewModel.foundUser)
+                
                 TextField("Código de convite (6 letras/números)", text: $localCode)
                     .textFieldStyle(.roundedBorder)
                     .textInputAutocapitalization(.characters)
                     .autocorrectionDisabled(true)
-
+                
+                // ! Botão padronizado
                 Button {
                     viewModel.inviteCodeInput = localCode
                     viewModel.addFriendByInviteCode()
@@ -240,32 +313,72 @@ struct AddFriendSheet: View {
                         ProgressView()
                             .frame(maxWidth: .infinity)
                     } else {
-                        Text("Adicionar")
-                            .frame(maxWidth: .infinity)
+                        HStack {
+                            Image(systemName: "person.badge.plus")
+                            Text("Adicionar amigo")
+                                .font(.title3)
+                            Spacer()
+                        }
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 12)
+                        .frame(maxWidth: .infinity)
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(viewModel.isLinking || localCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-
+                .buttonStyle(.bordered)
+                .disabled(viewModel.isLinking || viewModel.foundUser == nil)
+                
                 if let err = viewModel.errorMessage, !err.isEmpty {
                     Text(err).foregroundColor(.red).font(.footnote)
                 }
-
+                
                 Spacer(minLength: 0)
             }
             .padding()
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Text("Buscar usuário")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Fechar") { dismiss() }
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
         }
+        .onChange(of: localCode) { newCode in
+                // Verifica se o código tem 6 caracteres
+                if newCode.count == 6 {
+                    // Chama a função de busca no viewModel
+                    viewModel.fetchUser(byInviteCode: newCode)
+                } else {
+                    // Se não tiver 6 caracteres, limpa o usuário encontrado
+                    viewModel.foundUser = nil
+                }
+            }
         .onChange(of: viewModel.isLinking) { _, linking in
             // quando terminar e não tiver erro, fecha
             if !linking, (viewModel.errorMessage ?? "").isEmpty {
                 completion(true)
                 dismiss()
             }
+        }
+    }
+}
+
+struct usernameDisplayOnAddSheet: View {
+    var user: User?
+    var body: some View {
+        if let user = user {
+            Text(user.fullName)
+                .font(.callout)
+                .foregroundStyle(.primary)
+        } else {
+            Text("Usuário")
+                .font(.callout)
+                .foregroundColor(.secondary)
         }
     }
 }
@@ -287,15 +400,19 @@ struct EditProfileSheet: View {
             // Título + fechar
             HStack {
                 Text("Editar")
-                    .font(.headline)
+                    .font(.title3)
+                    .fontWeight(.semibold)
                 Spacer()
                 Button {
                     dismiss()
                 } label: {
-                    Image(systemName: "xmark")
-                        .foregroundColor(.secondary)
-                        .padding(8)
-                        .background(Circle().fill(Color(.systemGray5)))
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title)
+                        .foregroundStyle(.secondary)
+//                    Image(systemName: "xmark")
+//                        .foregroundColor(.secondary)
+//                        .padding(8)
+//                        .background(Circle().fill(Color(.systemGray5)))
                 }
                 .buttonStyle(.plain)
             }
@@ -311,7 +428,7 @@ struct EditProfileSheet: View {
             PhotosPicker(selection: $photoItem, matching: .images, photoLibrary: .shared()) {
                 Text("Editar foto de perfil")
                     .font(.callout)
-                    .foregroundColor(.blue)
+                    .foregroundStyle(.blue)
                     .underline(false)
             }
 
@@ -425,7 +542,10 @@ private struct AvatarThumb: View {
                let ui = UIImage(data: data) {
                 Image(uiImage: ui).resizable().scaledToFill()
             } else {
-                Image(systemName: "person.crop.circle.fill").resizable().scaledToFill().foregroundColor(.gray)
+                Image(systemName: "person.crop.circle.fill")
+                    .resizable()
+                    .scaledToFill()
+                    .foregroundColor(.secondary)
             }
         }
         .frame(width: 40, height: 40)
@@ -444,4 +564,77 @@ struct ShareSheet: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+// Nova View para o conteúdo do perfil
+private struct UserProfileContent: View {
+    let user: User
+    @ObservedObject var viewModel: ProfileViewModel
+    @Binding var didCopyCode: Bool
+    @Binding var showShare: Bool
+    @Binding var showAddFriend: Bool
+    @Binding var showEdit: Bool
+    
+    let displayName: String
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            // Avatar
+            VStack(spacing: 12) {
+                AvatarImage(user: user, selected: viewModel.selectedImage)
+                    .frame(width: 120, height: 120)
+                    .clipShape(Circle())
+                    .shadow(radius: 5)
+                
+                Text(displayName)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                
+                // Código com copiar
+                Button {
+                    UIPasteboard.general.string = user.inviteCode
+                    withAnimation { didCopyCode = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                        withAnimation { didCopyCode = false }
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(user.inviteCode).monospaced()
+                        Image(systemName: didCopyCode ? "checkmark.circle.fill" : "doc.on.doc")
+                            .imageScale(.medium)
+                    }
+                    .font(.subheadline)
+                    .foregroundColor(.blue)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.top, 8)
+            
+            // Cards: Constância / Amigos
+            HStack(spacing: 24) {
+                InfoCard(title: "Constância", systemImage: "flame", value: "\(user.streak)")
+                InfoCard(title: "Amigos", systemImage: "person.2", value: "\(viewModel.friendsCount)")
+            }
+            .padding(.horizontal)
+            
+            // Ações
+            VStack(spacing: 10) {
+                FullWidthAction(systemImage: "square.and.arrow.up", title: "Compartilhar perfil") { showShare = true }
+                
+                FullWidthAction(systemImage: "plus", title: "Adicionar amigo") { showAddFriend = true }
+                
+                NavigationLink {
+                    FriendsListView(viewModel: viewModel)
+                } label: {
+                    RowActionLabel(systemImage: "person.2", title: "Lista de amigos")
+                }
+                .buttonStyle(.bordered)
+                .frame(maxWidth: .infinity)
+                
+                FullWidthAction(systemImage: "pencil", title: "Editar perfil") { showEdit = true }
+            }
+            .padding(.horizontal)
+        }
+        .padding(.vertical)
+    }
 }
