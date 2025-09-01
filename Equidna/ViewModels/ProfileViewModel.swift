@@ -18,6 +18,9 @@ final class ProfileViewModel: ObservableObject {
     @Published var inviteCodeInput: String = ""
     @Published var isLinking = false
     @Published var friendsCount: Int = 0
+    
+    // Usuário estrangeiro
+    @Published var foundUser: User?
 
     private let database = CKContainer.default().publicCloudDatabase
     private let friendshipService = FriendshipService()
@@ -61,6 +64,28 @@ final class ProfileViewModel: ObservableObject {
                         self.isLoading = false
                         self.refreshFriendsCount()
                     }
+                }
+            }
+        }
+    }
+    
+    func fetchUser(byInviteCode code: String) {
+        isLoading = true
+        errorMessage = nil
+        foundUser = nil
+
+        // Chama o novo método do FriendshipService
+        friendshipService.fetchUser(byInviteCode: code) { [weak self] result in
+            DispatchQueue.main.async {
+                self?.isLoading = false
+                switch result {
+                case .success(let user):
+                    self?.foundUser = user
+                    self?.errorMessage = nil // Limpa qualquer erro anterior
+                case .failure(let error):
+                    // Trata o erro e atualiza o estado
+                    self?.errorMessage = error.localizedDescription
+                    self?.foundUser = nil
                 }
             }
         }
