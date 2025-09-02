@@ -15,7 +15,7 @@ struct EquidnaApp: App {
 
         var body: some Scene {
             WindowGroup {
-                TabBarView()
+                ContentView()
                     .environmentObject(userManager)
                     .onAppear {
                         userManager.setupCurrentUser()

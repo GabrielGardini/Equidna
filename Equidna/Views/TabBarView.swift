@@ -12,8 +12,10 @@ struct TabBarView: View {
     
     var body: some View {
         TabView {
-            Tab("Menu", systemImage: "plus.square.on.square") {
-                CameraView()
+            Tab("Registrar", systemImage: "plus.square.on.square") {
+                NavigationStack {
+                    RegisterView()
+                }
             }
             Tab("Histórico", systemImage: "photo.on.rectangle.angled") {
                 if let user = userManager.currentUser {
@@ -23,7 +25,13 @@ struct TabBarView: View {
                 }
             }
             Tab("Perfil", systemImage: "person.crop.circle") {
-                ContentView()
+                NavigationStack {
+                    if let userId = userManager.currentUser?.id {
+                        ProfileView(userID:userId)
+                    } else {
+                        Text("Sem usuario")
+                    }
+                }
             }
         }
     }
