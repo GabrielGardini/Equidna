@@ -15,10 +15,12 @@ struct TabBarView: View {
             Tab("Menu", systemImage: "plus.square.on.square") {
                 CameraView()
             }
-
             Tab("Histórico", systemImage: "photo.on.rectangle.angled") {
-                
-                Text("View do histórico")
+                if let user = userManager.currentUser {
+                    HistoryView(meUserID: user.id)
+                } else {
+                    ProgressView("Carregando usuário...")
+                }
             }
             Tab("Perfil", systemImage: "person.crop.circle") {
                 ContentView()
