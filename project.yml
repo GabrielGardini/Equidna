@@ -1,49 +1,62 @@
 name: Equidna
 options:
- deploymentTarget:
-  iOS: "18.4"
+  deploymentTarget:
+    iOS: "18.4"
 settings:
- base:
-  SWIFT_VERSION: 5.0
-  IPHONEOS_DEPLOYMENT_TARGET: "18.4"
+  base:
+    SWIFT_VERSION: 5.0
+    IPHONEOS_DEPLOYMENT_TARGET: "18.4"
 targets:
- EquidnaApp:
-  type: application
-  platform: iOS
-  sources:
-   - path: Equidna
-  resources:
-   - path: Equidna/Assets.xcassets
-   - path: Equidna/Base.lproj
-  entitlements:
-    path: Equidna/Equidna.entitlements
-    properties:
-     aps-environment: development
-     com.apple.developer.icloud-container-identifiers:
-        [iCloud.Gardinidev.EquidnaApp]
-     com.apple.developer.icloud-services:
-        [CloudKit]
-    # test:
-    #  testinho: ABC
-    #  testão: DEF
-  settings:
-   base:
-    INFOPLIST_KEY_UILaunchScreen_Generation: YES
-    PRODUCT_BUNDLE_IDENTIFIER: gardinidev.EquidnaApp
-    GENERATE_INFOPLIST_FILE: YES
-    ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-    # Display name do app (pode trocar depois se quiser outro)
-    PRODUCT_NAME: Equidna
-  dependencies: []
+  EquidnaApp:
+    type: application
+    platform: iOS
+    sources:
+      - path: Equidna
+    resources:
+      - path: Equidna/Assets.xcassets
+      - path: Equidna/Base.lproj
+    entitlements:
+      path: Equidna/Equidna.entitlements
+      properties:
+        aps-environment: development
+        com.apple.developer.icloud-container-identifiers:
+          [iCloud.Gardinidev.EquidnaApp]
+        com.apple.developer.icloud-services: [CloudKit]
+        com.apple.security.application-groups: [group.Gardinidev.EquidnaApp]
+      # test:
+      #  testinho: ABC
+      #  testão: DEF
+
+    WidgetEquidna:
+      type: extension.widget-extension
+      platform: iOS
+      sources:
+        - path: WidgetEquidna
+      entitlements:
+        path: WidgetEquidna/WidgetEquidna.entitlements
+        properties:
+          com.apple.security.application-groups: [group.Gardinidev.EquidnaApp]
+      dependencies:
+        - target: EquidnaApp
+
+    settings:
+      base:
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        PRODUCT_BUNDLE_IDENTIFIER: gardinidev.EquidnaApp
+        GENERATE_INFOPLIST_FILE: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Display name do app (pode trocar depois se quiser outro)
+        PRODUCT_NAME: Equidna
+    dependencies: []
+
 EquidnaTests:
   type: bundle.unit-test
   platform: iOS
   sources:
-   - path: EquidnaTests
+    - path: EquidnaTests
   settings:
-   base:
-    GENERATE_INFOPLIST_FILE: YES
-    PRODUCT_BUNDLE_IDENTIFIER: gardinidev.EquidnaTests
+    base:
+      GENERATE_INFOPLIST_FILE: YES
+      PRODUCT_BUNDLE_IDENTIFIER: gardinidev.EquidnaTests
   dependencies:
-   - target: EquidnaApp
-
+    - target: EquidnaApp
