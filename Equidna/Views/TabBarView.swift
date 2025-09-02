@@ -12,8 +12,9 @@ struct TabBarView: View {
     
     var body: some View {
         TabView {
-            Tab("Menu", systemImage: "plus.square.on.square") {
-                CameraView()
+            Tab("Registrar", systemImage: "plus.square.on.square") {
+                CameraView(userManager: userManager)
+                    .environmentObject(userManager)
             }
 
             Tab("Histórico", systemImage: "photo.on.rectangle.angled") {

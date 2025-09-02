@@ -163,5 +163,26 @@ class UserManager: ObservableObject {
                 }
             }
         }
+        
+    }
+}
+
+extension UserManager {
+    // Busca os detalhes de um usuário a partir de sua referência.
+    func fetchUserDetails(for userRef: CKRecord.Reference, completion: @escaping (Result<(name: String, id: CKRecord.ID), Error>) -> Void) {
+        database.fetch(withRecordID: userRef.recordID) { record, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                guard let record = record, let name = record["fullName"] as? String else {
+                    let notFoundError = NSError(domain: "UserManager", code: 404, userInfo: [NSLocalizedDescriptionKey: "Usuário ou nome não encontrado."])
+                    completion(.failure(notFoundError))
+                    return
+                }
+                completion(.success((name: name, id: record.recordID)))
+            }
+        }
     }
 }
