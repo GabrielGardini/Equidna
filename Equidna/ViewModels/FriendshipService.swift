@@ -33,6 +33,49 @@ final class FriendshipService {
         }
     }
 
+    
+    // Em algum lugar dentro da classe FriendshipService
+
+    func fetchUser(byInviteCode code: String,
+                   completion: @escaping (Result<User, Error>) -> Void) {
+        
+        // 1) Lógica de validação inicial do código
+        let sanitizedCode = code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        guard !sanitizedCode.isEmpty else {
+            completion(.failure(NSError(domain: "Friendship", code: 1,
+                                         userInfo: [NSLocalizedDescriptionKey: "Digite um código válido."])))
+            return
+        }
+        
+        // 2) Cria a query para buscar o usuário pelo inviteCode
+        let predicate = NSPredicate(format: "inviteCode == %@", sanitizedCode)
+        let query = CKQuery(recordType: "User", predicate: predicate)
+        
+        // 3) Executa a busca no CloudKit
+        db.perform(query, inZoneWith: nil) { results, err in
+            
+            // Assegura que o retorno ocorra na thread principal
+            DispatchQueue.main.async {
+                // A) Lida com erros da busca (CloudKit)
+                if let err = err {
+                    completion(.failure(err))
+                    return
+                }
+                
+                // B) Verifica se um usuário foi encontrado
+                guard let record = results?.first,
+                      let foundUser = User(record: record) else {
+                    completion(.failure(NSError(domain: "Friendship", code: 2,
+                                                 userInfo: [NSLocalizedDescriptionKey: "Usuário não encontrado."])))
+                    return
+                }
+                
+                // C) Sucesso: retorna o usuário encontrado
+                completion(.success(foundUser))
+            }
+        }
+    }
+    
     // MARK: - Upsert (idempotente) entre dois Users
     func upsertFriendship(aID: CKRecord.ID, bID: CKRecord.ID,
                           completion: @escaping (Result<Friendship, Error>) -> Void) {
