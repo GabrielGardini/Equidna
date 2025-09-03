@@ -57,6 +57,8 @@ public final class HistoryViewModel: ObservableObject {
 
     // Lista local (já vem pré-filtrada pelas queries, mas deixo aqui por segurança)
     public var filteredItems: [HistoryItem] { items }
+    
+//    let defaults = UserDefaults(suiteName: "group.com.gardinidev.EquidnaApp")
 
     // MARK: - API
 
@@ -191,6 +193,36 @@ public final class HistoryViewModel: ObservableObject {
         }
     }
 
+    func cacheLatestPhotos() {
+        let defaults = UserDefaults(suiteName: "group.Gardinidev.EquidnaApp")
+
+        // pega as 4 primeiras (já presumindo que `items` esteja ordenado por data desc)
+        let lastFour = Array(filteredItems.prefix(4))
+
+        // salva os IDs (útil se o widget precisar só referenciar)
+        let ids = lastFour.map { $0.id.recordName }
+        defaults?.set(ids, forKey: "latestPhotoIDs")
+
+        // salva os dados binários das imagens (se disponíveis)
+        let datas: [Data] = lastFour.compactMap { item in
+            guard let url = item.asset?.fileURL else { return nil }
+            return try? Data(contentsOf: url)
+        }
+        defaults?.set(datas, forKey: "latestPhotoDatas")
+
+        // se quiser salvar também as datas ou amigos, pode criar um dicionário extra
+        let meta: [[String: Any]] = lastFour.map { item in
+            [
+                "id": item.id.recordName,
+                "friend": item.friend.id, // ajusta conforme sua struct Friend
+                "date": item.date.timeIntervalSince1970,
+                "type": item.type.rawValue
+            ]
+        }
+        defaults?.set(meta, forKey: "latestPhotoMeta")
+    }
+
+    
     private func buildOutput(from records: [CKRecord]) {
         print("[HistoryVM] buildOutput(records: \(records.count))")
 

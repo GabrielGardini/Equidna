@@ -8,99 +8,118 @@
 import WidgetKit
 import SwiftUI
 
+struct EquidnaEntry: TimelineEntry {
+    let date: Date
+    let images: [UIImage]
+}
+
 struct Provider: TimelineProvider {
-    func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), emoji: "😀")
-    }
-
-    func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
-        let entry = SimpleEntry(date: Date(), emoji: "😀")
-        completion(entry)
-    }
-
-    func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> ()) {
-        var entries: [SimpleEntry] = []
-
-        // Generate a timeline consisting of five entries an hour apart, starting from the current date.
-        let currentDate = Date()
-        for hourOffset in 0 ..< 5 {
-            let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
-            let entry = SimpleEntry(date: entryDate, emoji: "😀")
-            entries.append(entry)
+    // Tempo (em horas) de atualização
+    let refreshFrequency: Int = 6
+    
+    func placeholder(in context: Context) -> EquidnaEntry {
+            EquidnaEntry(date: Date(), images: [])
         }
 
-        let timeline = Timeline(entries: entries, policy: .atEnd)
+    func getSnapshot(in context: Context, completion: @escaping (EquidnaEntry) -> Void) {
+        let images = loadLatestPhotos()
+        completion(EquidnaEntry(date: Date(), images: images))
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<EquidnaEntry>) -> Void) {
+        let images = loadLatestPhotos()
+        let entry = EquidnaEntry(date: Date(), images: images)
+
+        let refreshDate = Calendar.current.date(byAdding: .hour, value: refreshFrequency, to: Date())!
+        let timeline = Timeline(entries: [entry], policy: .after(refreshDate))
         completion(timeline)
     }
 
-//    func relevances() async -> WidgetRelevances<Void> {
-//        // Generate a list containing the contexts this widget is relevant in.
-//    }
+    private func loadEntry() -> EquidnaEntry {
+        let defaults = UserDefaults(suiteName: "group.Gardinidev.EquidnaApp")
+        let datas = defaults?.array(forKey: "latestPhotoDatas") as? [Data] ?? []
+        let images = datas.compactMap { UIImage(data: $0) }
+        return EquidnaEntry(date: Date(), images: images)
+    }
 }
 
 
-struct SimpleEntry: TimelineEntry {
-    let date: Date
-    let emoji: String
-}
-
-struct WidgetEquidnaEntryView : View {
-    var entry: Provider.Entry
+struct EquidnaWidgetEntryView: View {
+    var entry: EquidnaEntry
+    var maxImages: Int = 4
 
     var body: some View {
-        VStack {
-            Text("Time:")
-            Text(entry.date, style: .time)
-
-            Text("Emoji:")
-            Text(entry.emoji)
+        HStack(spacing: 4) {
+            ForEach(entry.images.prefix(maxImages), id: \.self) { img in
+                Image(uiImage: img)
+                    .resizable()
+                    .scaledToFill()
+                    .clipped()
+            }
         }
     }
 }
+
+// MARK: - Funções auxiliares
+func loadLatestPhotos() -> [UIImage] {
+    let defaults = UserDefaults(suiteName: "group.Gardinidev.EquidnaApp")
+
+    guard let datas = defaults?.array(forKey: "latestPhotoDatas") as? [Data] else {
+        return []
+    }
+
+    return datas.compactMap { UIImage(data: $0) }
+}
+
 
 // MARK: - Widget pequeno (2x2)
 struct WidgetSmall: Widget {
-    let kind: String = "WidgetEquidna"
+    let kind: String = "WidgetEquidnaSmall"
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             if #available(iOS 17.0, *) {
-                WidgetEquidnaEntryView(entry: entry)
+                EquidnaWidgetEntryView(entry: entry, maxImages: 2)
                     .containerBackground(.fill.tertiary, for: .widget)
             } else {
-                WidgetEquidnaEntryView(entry: entry)
+                EquidnaWidgetEntryView(entry: entry, maxImages: 2)
                     .padding()
                     .background()
             }
         }
-        .configurationDisplayName("My Widget")
-        .description("This is an example widget.")
+        .configurationDisplayName("Equidna Widget Pequeno")
+        .description("Mostra até 2 das últimas fotos recebidas.")
+        .supportedFamilies([.systemSmall])
     }
 }
 
-// MARK: - Widget pequeno (2x4)
+// MARK: - Widget médio (2x4)
 struct WidgetMedium: Widget {
-    let kind: String = "WidgetEquidna"
+    let kind: String = "WidgetEquidnaMedium"
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             if #available(iOS 17.0, *) {
-                WidgetEquidnaEntryView(entry: entry)
+                EquidnaWidgetEntryView(entry: entry, maxImages: 4)
                     .containerBackground(.fill.tertiary, for: .widget)
             } else {
-                WidgetEquidnaEntryView(entry: entry)
+                EquidnaWidgetEntryView(entry: entry, maxImages: 4)
                     .padding()
                     .background()
             }
         }
-        .configurationDisplayName("My Widget")
-        .description("This is an example widget.")
+        .configurationDisplayName("Equidna Widget Médio")
+        .description("Mostra até 4 das últimas fotos recebidas.")
+        .supportedFamilies([.systemMedium])
     }
 }
 
+
+
+// MARK: - Preview
 #Preview(as: .systemSmall) {
     WidgetSmall()
 } timeline: {
-    SimpleEntry(date: .now, emoji: "😀")
-    SimpleEntry(date: .now, emoji: "🤩")
+    EquidnaEntry(date: .now, images: [])
+    EquidnaEntry(date: .now.addingTimeInterval(60), images: [])
 }
