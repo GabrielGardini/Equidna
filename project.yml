@@ -1,12 +1,13 @@
 name: Equidna
 options:
- deploymentTarget:
-  iOS: "18.4"
+  deploymentTarget:
+    iOS: "18.4"
 settings:
- base:
-  SWIFT_VERSION: 5.0
-  IPHONEOS_DEPLOYMENT_TARGET: "18.4"
+  base:
+    SWIFT_VERSION: 5.0
+    IPHONEOS_DEPLOYMENT_TARGET: "18.4"
 targets:
+
  EquidnaApp:
   type: application
   platform: iOS
@@ -16,16 +17,19 @@ targets:
    - path: Equidna/Assets.xcassets
    - path: Equidna/Base.lproj
   entitlements:
+    generate: true
     path: Equidna/Equidna.entitlements
-    properties:
-     aps-environment: development
-     com.apple.developer.icloud-container-identifiers:
-        [iCloud.Gardinidev.EquidnaApp]
-     com.apple.developer.icloud-services:
-        [CloudKit]
-    # test:
-    #  testinho: ABC
-    #  testão: DEF
+    entitlements:
+      generate: true
+      path: Equidna/Equidna.entitlements
+      properties:
+        aps-environment: development
+        com.apple.developer.icloud-container-identifiers:
+          - iCloud.Gardinidev.EquidnaApp
+        com.apple.developer.icloud-services:
+          - CloudKit
+        com.apple.security.application-groups:
+          - group.Gardinidev.EquidnaApp
   settings:
    base:
     INFOPLIST_KEY_UILaunchScreen_Generation: YES
@@ -36,6 +40,7 @@ targets:
     ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
     # Display name do app (pode trocar depois se quiser outro)
     PRODUCT_NAME: Equidna
+    CURRENT_PROJECT_VERSION: 0.1
   dependencies: []
 EquidnaTests:
   type: bundle.unit-test
@@ -49,3 +54,38 @@ EquidnaTests:
   dependencies:
    - target: EquidnaApp
 
+  WidgetEquidna:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: WidgetEquidna
+    entitlements:
+      generate: true
+      path: WidgetEquidna/WidgetEquidna.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.Gardinidev.EquidnaApp
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        CURRENT_PROJECT_VERSION: 0.1
+        PRODUCT_BUNDLE_IDENTIFIER: gardinidev.WidgetEquidna
+        # INFOPLIST_KEY_NSExtension:
+        #   - NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        #   - NSExtensionPrincipalClass: ""
+        INFOPLIST_KEY_CFBundleDisplayName: "My Widget"
+    dependencies:
+      - target: EquidnaApp
+      - framework: WidgetKit
+
+  EquidnaTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: EquidnaTests
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: gardinidev.EquidnaTests
+    dependencies:
+      - target: EquidnaApp
