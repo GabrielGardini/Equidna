@@ -38,17 +38,18 @@ targets:
         PRODUCT_NAME: Equidna
         CURRENT_PROJECT_VERSION: 0.1
     dependencies: []
-EquidnaTests:
-  type: bundle.unit-test
-  platform: iOS
-  sources:
-    - path: EquidnaTests
-  settings:
-    base:
-      GENERATE_INFOPLIST_FILE: YES
-      PRODUCT_BUNDLE_IDENTIFIER: gardinidev.EquidnaTests
-  dependencies:
-    - target: EquidnaApp
+
+  EquidnaTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: EquidnaTests
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: gardinidev.EquidnaTests
+    dependencies:
+      - target: EquidnaApp
 
   WidgetEquidna:
     type: app-extension
