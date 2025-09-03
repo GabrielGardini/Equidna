@@ -11,7 +11,8 @@ import SwiftUI
 @main
 struct WidgetEquidnaBundle: WidgetBundle {
     var body: some Widget {
-        WidgetEquidna()
+        WidgetSmall()
+        WidgetMedium()
         WidgetEquidnaControl()
         WidgetEquidnaLiveActivity()
     }

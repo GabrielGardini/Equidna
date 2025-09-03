@@ -38,6 +38,7 @@ struct Provider: TimelineProvider {
 //    }
 }
 
+
 struct SimpleEntry: TimelineEntry {
     let date: Date
     let emoji: String
@@ -57,7 +58,28 @@ struct WidgetEquidnaEntryView : View {
     }
 }
 
-struct WidgetEquidna: Widget {
+// MARK: - Widget pequeno (2x2)
+struct WidgetSmall: Widget {
+    let kind: String = "WidgetEquidna"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: Provider()) { entry in
+            if #available(iOS 17.0, *) {
+                WidgetEquidnaEntryView(entry: entry)
+                    .containerBackground(.fill.tertiary, for: .widget)
+            } else {
+                WidgetEquidnaEntryView(entry: entry)
+                    .padding()
+                    .background()
+            }
+        }
+        .configurationDisplayName("My Widget")
+        .description("This is an example widget.")
+    }
+}
+
+// MARK: - Widget pequeno (2x4)
+struct WidgetMedium: Widget {
     let kind: String = "WidgetEquidna"
 
     var body: some WidgetConfiguration {
@@ -77,7 +99,7 @@ struct WidgetEquidna: Widget {
 }
 
 #Preview(as: .systemSmall) {
-    WidgetEquidna()
+    WidgetSmall()
 } timeline: {
     SimpleEntry(date: .now, emoji: "😀")
     SimpleEntry(date: .now, emoji: "🤩")
