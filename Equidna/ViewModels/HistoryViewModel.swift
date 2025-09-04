@@ -1,8 +1,6 @@
 import Foundation
 import CloudKit
 import SwiftUI
-import BackgroundTasks
-import WidgetKit
 
 // MARK: - Tipos / Modelos
 
@@ -69,6 +67,7 @@ public final class HistoryViewModel: ObservableObject {
         self.meSystemRecordID = meSystemRecordID
         print("[HistoryVM] load meUserID=\(meUserID.recordName), meSystemRecordID=\(meSystemRecordID?.recordName ?? "nil")")
         fetchPhotos()
+        cacheLatestPhotos()
     }
 
     public func setFilter(_ new: HistoryFilter) {
@@ -80,9 +79,7 @@ public final class HistoryViewModel: ObservableObject {
     public func refresh() {
         print("[HistoryVM] refresh() filter=\(filter)")
         fetchPhotos()
-        
-        let numCachedPhotos = cacheLatestPhotos()
-        print("[Cache] Salvas n=\(numCachedPhotos) fotos em cache")
+        cacheLatestPhotos()
     }
 
     public func markSeen(mediaID: CKRecord.ID) {
@@ -219,14 +216,14 @@ public final class HistoryViewModel: ObservableObject {
         let meta: [[String: Any]] = lastFour.map { item in
             [
                 "id": item.id.recordName,
-                "friend": item.friend.id, // ajusta conforme sua struct Friend
+                "friend": item.friend.id, // ajusta Sconforme sua struct Friend
                 "date": item.date.timeIntervalSince1970,
                 "type": item.type.rawValue
             ]
         }
         defaults?.set(meta, forKey: "latestPhotoMeta")
         
-        return datas.count
+        print("[HistoryVM] cacheLatestPhotos() Salvas n=\(datas.count) fotos em cache")
     }
     
     private func buildOutput(from records: [CKRecord]) {

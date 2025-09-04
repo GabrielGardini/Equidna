@@ -61,7 +61,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             task.setTaskCompleted(success: false)
         }
     }
-
 }
 
 @main
