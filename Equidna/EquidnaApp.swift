@@ -7,9 +7,17 @@
 
 import SwiftUI
 
-@main
+class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions lanchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        print("App inicializado")
+        return true
+    }
+}
 
+@main
 struct EquidnaApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     @StateObject private var userManager = UserManager()
 
