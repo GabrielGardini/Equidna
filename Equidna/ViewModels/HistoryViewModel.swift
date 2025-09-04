@@ -1,6 +1,8 @@
 import Foundation
 import CloudKit
 import SwiftUI
+import BackgroundTasks
+import WidgetKit
 
 // MARK: - Tipos / Modelos
 
@@ -78,6 +80,9 @@ public final class HistoryViewModel: ObservableObject {
     public func refresh() {
         print("[HistoryVM] refresh() filter=\(filter)")
         fetchPhotos()
+        
+        let numCachedPhotos = cacheLatestPhotos()
+        print("[Cache] Salvas n=\(numCachedPhotos) fotos em cache")
     }
 
     public func markSeen(mediaID: CKRecord.ID) {
@@ -116,7 +121,7 @@ public final class HistoryViewModel: ObservableObject {
 
     // MARK: - CloudKit
 
-    private func fetchPhotos() {
+    private func fetchPhotos() -> Void {
         isLoading = true; error = nil
         let group = DispatchGroup()
         var allRecords: [CKRecord] = []
@@ -193,7 +198,7 @@ public final class HistoryViewModel: ObservableObject {
         }
     }
 
-    func cacheLatestPhotos() {
+    func cacheLatestPhotos() -> Int {
         let defaults = UserDefaults(suiteName: "group.Gardinidev.EquidnaApp")
 
         // pega as 4 primeiras (já presumindo que `items` esteja ordenado por data desc)
@@ -209,7 +214,7 @@ public final class HistoryViewModel: ObservableObject {
             return try? Data(contentsOf: url)
         }
         defaults?.set(datas, forKey: "latestPhotoDatas")
-
+        
         // se quiser salvar também as datas ou amigos, pode criar um dicionário extra
         let meta: [[String: Any]] = lastFour.map { item in
             [
@@ -220,8 +225,9 @@ public final class HistoryViewModel: ObservableObject {
             ]
         }
         defaults?.set(meta, forKey: "latestPhotoMeta")
+        
+        return datas.count
     }
-
     
     private func buildOutput(from records: [CKRecord]) {
         print("[HistoryVM] buildOutput(records: \(records.count))")
