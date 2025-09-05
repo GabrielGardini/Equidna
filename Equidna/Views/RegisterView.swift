@@ -40,7 +40,7 @@ struct RegisterView: View {
                     RegisterCardView(
                         title: "Câmera",
                         subtitle: "Faça um instante virar presença",
-                        icon: "camera.fill",
+                        icon: "camera",
                         backgroundImage: "bg_camera"
                     ).background(.white)
                 }
@@ -59,7 +59,7 @@ struct RegisterView: View {
                     RegisterCardView(
                         title: "Audio",
                         subtitle: "Deixe sua voz mais perto",
-                        icon: "mic.fill",
+                        icon: "mic",
                         backgroundImage: "bg_audio"
                     ).background(.white)
                 }
@@ -83,7 +83,7 @@ struct RegisterView: View {
                     RegisterCardView(
                         title: "Texto",
                         subtitle: "Envie mensagens que aproximam",
-                        icon: "text.bubble.fill",
+                        icon: "text.bubble",
                         backgroundImage: "bg_texto"
                     ).background(.white)
                 }
