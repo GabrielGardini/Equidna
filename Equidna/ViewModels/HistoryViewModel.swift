@@ -57,15 +57,64 @@ public final class HistoryViewModel: ObservableObject {
 
     // Lista local (já vem pré-filtrada pelas queries, mas deixo aqui por segurança)
     public var filteredItems: [HistoryItem] { items }
+    // Cache opcional para evitar queries repetidas
+    private var userRefToUserIDCache: [CKRecord.ID: CKRecord.ID] = [:]
+
+    private func resolveUserRecordID(fromUserRef userRefID: CKRecord.ID,
+                                     completion: @escaping (CKRecord.ID?) -> Void) {
+        if let cached = userRefToUserIDCache[userRefID] {
+            completion(cached)
+            return
+        }
+
+        let ref = CKRecord.Reference(recordID: userRefID, action: .none)
+        // ⚠️ Garanta no CloudKit Dashboard que o campo `userRef` (em `User`) está marcado como "Queryable"
+        let p = NSPredicate(format: "userRef == %@", ref)
+        let q = CKQuery(recordType: "User", predicate: p)
+
+        db.perform(q, inZoneWith: nil) { [weak self] results, err in
+            if let err = err {
+                print("[HistoryVM] resolveUserRecordID erro:", err.localizedDescription)
+                DispatchQueue.main.async { completion(nil) }
+                return
+            }
+            let userRecID = results?.first?.recordID
+            if let userRecID, let self { self.userRefToUserIDCache[userRefID] = userRecID }
+            DispatchQueue.main.async { completion(userRecID) }
+        }
+    }
 
     // MARK: - API
-
-    public func load(meUserID: CKRecord.ID, meSystemRecordID: CKRecord.ID? = nil) {
-        self.meUserID = meUserID
-        self.meSystemRecordID = meSystemRecordID
-        print("[HistoryVM] load meUserID=\(meUserID.recordName), meSystemRecordID=\(meSystemRecordID?.recordName ?? "nil")")
-        fetchPhotos()
+    public func loadUsingCurrentiCloudUser(meSystemRecordID: CKRecord.ID? = nil) {
+        CKContainer.default().fetchUserRecordID { [weak self] userRefID, error in
+            guard let self else { return }
+            if let userRefID {
+                DispatchQueue.main.async {
+                    self.load(meUserRefID: userRefID, meSystemRecordID: meSystemRecordID)
+                }
+            } else {
+                print("[HistoryVM] fetchUserRecordID erro:", error?.localizedDescription ?? "desconhecido")
+                DispatchQueue.main.async { self.error = "Não foi possível descobrir o usuário iCloud atual." }
+            }
+        }
     }
+    public func load(meUserRefID: CKRecord.ID, meSystemRecordID: CKRecord.ID? = nil) {
+        self.meSystemRecordID = meSystemRecordID
+        print("[HistoryVM] load via userRef=\(meUserRefID.recordName)")
+
+        // Resolve `User` a partir do `userRef`
+        resolveUserRecordID(fromUserRef: meUserRefID) { [weak self] userRecID in
+            guard let self else { return }
+            guard let userRecID else {
+                self.error = "Usuário não encontrado para userRef \(meUserRefID.recordName)"
+                self.isLoading = false
+                return
+            }
+            self.meUserID = userRecID             // <- a partir daqui, seu fluxo atual continua igual
+            self.fetchPhotos()
+        }
+    }
+
 
     public func setFilter(_ new: HistoryFilter) {
         print("[HistoryVM] setFilter -> \(new)")
