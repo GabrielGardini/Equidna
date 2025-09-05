@@ -57,7 +57,7 @@ targets:
     dependencies:
       - target: EquidnaApp
 
-  WidgetEquidna:
+  WidgetApp:
     type: app-extension
     platform: iOS
     sources:
