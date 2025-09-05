@@ -59,7 +59,7 @@ struct HistoryView: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 20)
             }
-            .navigationTitle("Histórico")
+            .navigationTitle("Mural")
             .onAppear { vm.load(meUserID: meUserID) }
             .sheet(isPresented: $showFilter) {
                 FilterSheet(

@@ -17,7 +17,7 @@ struct TabBarView: View {
                     RegisterView()
                 }
             }
-            Tab("Histórico", systemImage: "photo.on.rectangle.angled") {
+            Tab("Mural", systemImage: "photo.on.rectangle.angled") {
                 if let user = userManager.currentUser {
                     HistoryView(meUserID: user.id)
                 } else {
