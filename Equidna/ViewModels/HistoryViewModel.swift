@@ -216,8 +216,8 @@ public final class HistoryViewModel: ObservableObject {
         let meta: [[String: Any]] = lastFour.map { item in
             [
                 "id": item.id.recordName,
-//                "friend": item.friend.id, // ajusta Sconforme sua struct Friend
-                "date": item.date.timeIntervalSince1970,
+                "friendInitials": item.friend.initials,
+                "date": item.date,
                 "type": item.type.rawValue
             ]
         }
