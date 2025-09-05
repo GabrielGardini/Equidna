@@ -67,7 +67,6 @@ public final class HistoryViewModel: ObservableObject {
         self.meSystemRecordID = meSystemRecordID
         print("[HistoryVM] load meUserID=\(meUserID.recordName), meSystemRecordID=\(meSystemRecordID?.recordName ?? "nil")")
         fetchPhotos()
-        cacheLatestPhotos()
     }
 
     public func setFilter(_ new: HistoryFilter) {
@@ -79,7 +78,6 @@ public final class HistoryViewModel: ObservableObject {
     public func refresh() {
         print("[HistoryVM] refresh() filter=\(filter)")
         fetchPhotos()
-        cacheLatestPhotos()
     }
 
     public func markSeen(mediaID: CKRecord.ID) {
@@ -195,11 +193,13 @@ public final class HistoryViewModel: ObservableObject {
         }
     }
 
-    func cacheLatestPhotos() -> Int {
+    func cacheLatestPhotos() {
         let defaults = UserDefaults(suiteName: "group.Gardinidev.EquidnaApp")
 
         // pega as 4 primeiras (já presumindo que `items` esteja ordenado por data desc)
-        let lastFour = Array(filteredItems.prefix(4))
+        let lastFour = Array(self.items.prefix(4))
+        print("cacheLatestPhotos: items=\(self.items.count)")
+        print("cacheLatestPhotos: lastFour=\(lastFour.count)")
 
         // salva os IDs (útil se o widget precisar só referenciar)
         let ids = lastFour.map { $0.id.recordName }
@@ -216,7 +216,7 @@ public final class HistoryViewModel: ObservableObject {
         let meta: [[String: Any]] = lastFour.map { item in
             [
                 "id": item.id.recordName,
-                "friend": item.friend.id, // ajusta Sconforme sua struct Friend
+//                "friend": item.friend.id, // ajusta Sconforme sua struct Friend
                 "date": item.date.timeIntervalSince1970,
                 "type": item.type.rawValue
             ]
@@ -286,6 +286,9 @@ public final class HistoryViewModel: ObservableObject {
             }
 
             self.isLoading = false
+            
+            print("Ultima etapa de buildOutput: chamada de cacheLatestPhotos")
+            cacheLatestPhotos()
         }
     }
 
