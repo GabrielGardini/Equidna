@@ -11,6 +11,7 @@ import SwiftUI
 @main
 struct WidgetAppBundle: WidgetBundle {
     var body: some Widget {
-        WidgetApp()
+        WidgetSmall()
+        WidgetMedium()
     }
 }

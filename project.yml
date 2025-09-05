@@ -58,10 +58,10 @@ targets:
     type: app-extension
     platform: iOS
     sources:
-      - path: WidgetEquidna
+      - path: WidgetApp
     entitlements:
       generate: true
-      path: WidgetEquidna/WidgetEquidna.entitlements
+      path: WidgetApp/WidgetApp.entitlements
       properties:
         com.apple.security.application-groups:
           - group.Gardinidev.EquidnaApp
@@ -69,7 +69,7 @@ targets:
       base:
         GENERATE_INFOPLIST_FILE: YES
         CURRENT_PROJECT_VERSION: 0.1
-        PRODUCT_BUNDLE_IDENTIFIER: gardinidev.WidgetEquidna
+        PRODUCT_BUNDLE_IDENTIFIER: gardinidev.WidgetApp
         # INFOPLIST_KEY_NSExtension:
         #   NSExtensionPointIdentifier: com.apple.widgetkit-extension
         #   NSExtensionPrincipalClass: ""
