@@ -116,7 +116,7 @@ public final class HistoryViewModel: ObservableObject {
 
     // MARK: - CloudKit
 
-    private func fetchPhotos() {
+    private func fetchPhotos() -> Void {
         isLoading = true; error = nil
         let group = DispatchGroup()
         var allRecords: [CKRecord] = []
@@ -197,7 +197,9 @@ public final class HistoryViewModel: ObservableObject {
         let defaults = UserDefaults(suiteName: "group.Gardinidev.EquidnaApp")
 
         // pega as 4 primeiras (já presumindo que `items` esteja ordenado por data desc)
-        let lastFour = Array(filteredItems.prefix(4))
+        let lastFour = Array(self.items.prefix(4))
+        print("cacheLatestPhotos: items=\(self.items.count)")
+        print("cacheLatestPhotos: lastFour=\(lastFour.count)")
 
         // salva os IDs (útil se o widget precisar só referenciar)
         let ids = lastFour.map { $0.id.recordName }
@@ -209,19 +211,20 @@ public final class HistoryViewModel: ObservableObject {
             return try? Data(contentsOf: url)
         }
         defaults?.set(datas, forKey: "latestPhotoDatas")
-
+        
         // se quiser salvar também as datas ou amigos, pode criar um dicionário extra
         let meta: [[String: Any]] = lastFour.map { item in
             [
                 "id": item.id.recordName,
-                "friend": item.friend.id, // ajusta conforme sua struct Friend
-                "date": item.date.timeIntervalSince1970,
+                "friendInitials": item.friend.initials,
+                "date": item.date,
                 "type": item.type.rawValue
             ]
         }
         defaults?.set(meta, forKey: "latestPhotoMeta")
+        
+        print("[HistoryVM] cacheLatestPhotos() Salvas n=\(datas.count) fotos em cache")
     }
-
     
     private func buildOutput(from records: [CKRecord]) {
         print("[HistoryVM] buildOutput(records: \(records.count))")
@@ -283,6 +286,9 @@ public final class HistoryViewModel: ObservableObject {
             }
 
             self.isLoading = false
+            
+            print("Ultima etapa de buildOutput: chamada de cacheLatestPhotos")
+            cacheLatestPhotos()
         }
     }
 
