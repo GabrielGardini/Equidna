@@ -60,7 +60,7 @@ struct HistoryView: View {
                 .padding(.bottom, 20)
             }
             .navigationTitle("Mural")
-            .onAppear { vm.load(meUserID: meUserID) }
+            .onAppear { vm.loadUsingCurrentiCloudUser() }
             .sheet(isPresented: $showFilter) {
                 FilterSheet(
                     friends: vm.friends,
@@ -205,7 +205,7 @@ private struct HistoryTile: View {
                 }
             }
         }
-        .frame(height: 100)
+//        .frame(height: 100)
     }
 
     private var fallbackIcon: some View {
@@ -244,10 +244,58 @@ private struct HistoryMediaDetail: View {
 
     // usado pelo share sheet
     private var shareItems: [Any] {
-        if let url = item.asset?.fileURL { return [url] }
-        return []
+        guard let url = item.asset?.fileURL else { return [] }
+
+        switch item.type {
+        case .photo:
+            // 👇 Envie a imagem real, não um URL
+            if let data = try? Data(contentsOf: url),
+               let image = UIImage(data: data) {
+                return [image]
+            } else {
+                return [url] // fallback
+            }
+
+        case .video:
+            // 👇 Garante extensão ".mp4" para os apps reconhecerem como vídeo
+            if let tmp = tempCopy(url, withExtension: "mp4") {
+                return [tmp]
+            } else {
+                return [url]
+            }
+
+        case .audio:
+            // 👇 Extensão “.m4a” ajuda apps a tratarem como áudio
+            if let tmp = tempCopy(url, withExtension: "m4a") {
+                return [tmp]
+            } else {
+                return [url]
+            }
+
+        case .text:
+            // Se no futuro você tiver o conteúdo de texto, compartilhe a String
+            // Aqui mantemos o URL como fallback.
+            return [url]
+        }
     }
 
+    // Copia o arquivo para /tmp com a extensão sugerida (melhora compatibilidade no share)
+    private func tempCopy(_ source: URL, withExtension ext: String) -> URL? {
+        let tmp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension(ext)
+        do {
+            // Remove se já existir, por segurança
+            if FileManager.default.fileExists(atPath: tmp.path) {
+                try FileManager.default.removeItem(at: tmp)
+            }
+            try FileManager.default.copyItem(at: source, to: tmp)
+            return tmp
+        } catch {
+            print("Falha ao copiar para tmp:", error.localizedDescription)
+            return nil
+        }
+    }
     var body: some View {
         // ✅ NÃO escondemos a Navigation Bar — assim o back "Histórico" aparece
         // ❗️Mas escondemos a Tab Bar no detalhe
@@ -300,14 +348,17 @@ private struct HistoryMediaDetail: View {
                     .font(.largeTitle).bold()
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(Color(.systemGray6))
-                    .frame(height: 360)
-                    .overlay(
-                        Group {
+//                RoundedRectangle(cornerRadius: 18, style: .continuous)
+//                    .fill(Color(.systemGray6))
+//                    .frame(height: 360)
+//                    .overlay(
+                        VStack {
                             if let url = item.asset?.fileURL {
                                 AsyncImage(url: url) { img in
-                                    img.resizable().scaledToFit().padding()
+                                    img
+                                        .resizable()
+                                        .scaledToFit()
+                                        .cornerRadius(16)
                                 } placeholder: {
                                     ProgressView()
                                 }
@@ -315,9 +366,11 @@ private struct HistoryMediaDetail: View {
                                 Image(systemName: "photo.on.rectangle")
                                     .font(.system(size: 48))
                                     .foregroundColor(.secondary)
+                                    .cornerRadius(16)
                             }
                         }
-                    )
+                        .cornerRadius(16)
+//                    )
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Enviado em \(dateString(item.date)) às \(timeString(item.date))")

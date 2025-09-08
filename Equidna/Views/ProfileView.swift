@@ -184,8 +184,12 @@ struct ProfileView: View {
     @ViewBuilder
     private var contentView: some View {
         if viewModel.isLoading {
-            ProgressView("Carregando...")
-                .padding(.top, 40)
+            HStack {
+                Spacer()
+                ProgressView("Carregando...")
+                    .padding(.top, 40)
+                Spacer()
+            }
         } else if let user = viewModel.user {
             UserProfileContent(
                 user: user,

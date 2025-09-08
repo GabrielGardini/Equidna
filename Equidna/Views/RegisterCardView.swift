@@ -14,7 +14,7 @@ struct RegisterCardView: View {
     var backgroundImage: String
     
     var body: some View {
-        ZStack(alignment: .leading) {
+        ZStack() {
             Image(backgroundImage) // depois tenho que adiciona no Assets
                 .resizable()
                 .scaledToFill()
@@ -30,7 +30,8 @@ struct RegisterCardView: View {
                         .foregroundColor(.white)
                     
                     Text(subtitle)
-                        .font(.subheadline)
+                        .font(.caption)
+                        .multilineTextAlignment(.leading)
                         .foregroundColor(.white.opacity(0.9))
                 }
                 Spacer()
@@ -38,10 +39,11 @@ struct RegisterCardView: View {
                 Image(systemName: icon)
                     .font(.system(size: 50))
                     .foregroundColor(Color(red: 0.85, green: 0.84, blue: 0.89)) // equivalente ao #D9D7E3
+                    .padding(.leading, 16)
 
             }
             .padding(.horizontal, 16)
         }
-        .frame(height: 97)
+        .frame(height: 100)
     }
 }
