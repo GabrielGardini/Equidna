@@ -9,7 +9,7 @@ import CloudKit
 
 @MainActor
 class ChatViewModel: ObservableObject {
-    @Published var friendList: [Friend] = []
+    @Published var friendList: [User] = []
     
     private let friendshipService = FriendshipService()
     private let mediaService = MediaService()
@@ -34,7 +34,7 @@ class ChatViewModel: ObservableObject {
                         pair.userA.recordID == me.id ? pair.userB.recordID : pair.userA.recordID
                     }
 
-                    var friends: [Friend] = []
+                    var friends: [User] = []
 
                     for friendID in otherIDs {
                         let userDetails = try await withCheckedThrowingContinuation { continuation in
@@ -42,26 +42,51 @@ class ChatViewModel: ObservableObject {
                                 continuation.resume(with: result)
                             }
                         }
+                        let friendUser = User(
+                            id: userDetails.id,
+                            fullName: userDetails.fullName,
+                            userID: userDetails.userID,
+                            profilePhoto: userDetails.profilePhoto,
+                            inviteCode: userDetails.inviteCode,
+                            friends: userDetails.friends,
+                            streak: userDetails.streak,
+                            predefinedMessages: userDetails.predefinedMessages,
+                            userRef: userDetails.userRef ?? CKRecord.Reference(recordID: friendID, action: .none)
+                        )
+                        friends.append(friendUser)
+                       // self.friendList.append(friendUser)
 
-                        friends.append(Friend(name: userDetails.name, userReference: CKRecord.Reference(recordID: friendID, action: .none)))
+                      //  friends.append(Friend(name: userDetails.name, userReference: CKRecord.Reference(recordID: friendID, action: .none)))
                     }
 
-                    self.friendList = friends.sorted { $0.name < $1.name }
+                    self.friendList = friends.sorted { $0.fullName < $1.fullName }
                 } catch {
                     print("Erro ao buscar amigos: \(error)")
                 }
             }
         }
     
-    func sendMedia(from senderRef: CKRecord.Reference, image: UIImage?, videoURL: URL?, to receivers: [CKRecord.Reference]) {
+    func sendMedia(image: UIImage?, videoURL: URL?, to receivers: [String]) {
            Task {
+               
+               guard let senderId = userManager?.currentUser?.userRef else {
+                   //Handle error -> No user ref
+                   return
+               }
+               
+               let receiverList:[CKRecord.Reference] = friendList.filter { friend in
+                   receivers.contains(friend.userID)
+               }.compactMap { friend in
+                   friend.userRef
+               }
+               
                do {
                    let (fileURL, mediaType) = try prepareMediaForUpload(image: image, videoURL: videoURL)
                    let mediaObject = Media(
                        type: mediaType,
                        file: CKAsset(fileURL: fileURL),
-                       sender: senderRef,
-                       receiver: receivers
+                       sender: senderId,
+                       receiver: receiverList
                    )
                    _ = try await mediaService.save(media: mediaObject)
                } catch {
