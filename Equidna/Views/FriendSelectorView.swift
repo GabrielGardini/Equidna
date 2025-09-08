@@ -14,14 +14,18 @@ struct FriendSelectorView: View {
     let image: UIImage?
     let videoURL: URL?
     
-    @State private var selectedFriends: Set<String> = []
+    @State private var selectedFriends: Set<CKRecord.Reference> = []
+   // @State private var selectedFriends: Set<String> = []
     @Environment(\.presentationMode) var presentationMode
     
     private func toggleSelection(_ friend: User) {
-        if selectedFriends.contains(friend.userID) {
-            selectedFriends.remove(friend.userID)
+        
+        guard let friendRef = friend.userRef else { return }
+        
+        if selectedFriends.contains(friendRef) {
+            selectedFriends.remove(friendRef)
         } else {
-            selectedFriends.insert(friend.userID)
+            selectedFriends.insert(friendRef)
         }
     }
     
@@ -34,7 +38,7 @@ struct FriendSelectorView: View {
                     HStack {
                         Text(friend.fullName)
                         Spacer()
-                        if selectedFriends.contains(friend.userID) {
+                        if selectedFriends.contains(friend.userRef!) {
                             Image(systemName: "checkmark.circle.fill")
                         }
                     }

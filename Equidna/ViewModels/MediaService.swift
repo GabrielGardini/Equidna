@@ -21,7 +21,17 @@ class MediaService {
         let record = status.toRecord()
         return try await database.save(record)
     }
-
+    
+    func save(record: CKRecord) async throws -> CKRecord {
+        do {
+            let savedRecord = try await database.save(record)
+            print("Record salvo com sucesso no CloudKit com ID: \(savedRecord.recordID.recordName)")
+            return savedRecord
+        } catch {
+            print("Erro ao tentar salvar o CKRecord no CloudKit: \(error.localizedDescription)")
+            throw error
+        }
+    }
 
     func fetchHistory(for userRef: CKRecord.Reference) async throws -> [Media] {
         let sentPredicate = NSPredicate(format: "sender == %@", userRef)

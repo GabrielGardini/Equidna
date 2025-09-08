@@ -66,33 +66,96 @@ class ChatViewModel: ObservableObject {
             }
         }
     
-    func sendMedia(image: UIImage?, videoURL: URL?, to receivers: [String]) {
+    func getUserIDs(receivers:[CKRecord.Reference],
+                    completion:@escaping (Result<[CKRecord.ID], Error>) -> Void)  {
+       
+        let userIds = receivers.map{$0.recordID.recordName}
+        
+        let predicate = NSPredicate(format: "userID in %@", userIds ) // %K = keyPath
+        let query = CKQuery(recordType: "User", predicate: predicate)
+        let db = CKContainer.default().publicCloudDatabase
+        
+           
+        db.fetch(withQuery: query) { result in
+            switch result {
+            case .success(let records):
+                let recordIds = records.matchResults.map{$0.0}
+                completion(Result<[CKRecord.ID], Error>.success(recordIds))
+            case .failure(let error):
+                print("Error fetching records: \(error)")
+                completion(Result<[CKRecord.ID], Error>.failure(error))
+            }
+        }
+    }
+    
+    func sendMedia(image: UIImage?, videoURL: URL?, to receivers: [CKRecord.Reference]) {
            Task {
-               
                guard let senderId = userManager?.currentUser?.userRef else {
+                   print("Error: No sender ID found")
                    //Handle error -> No user ref
                    return
                }
                
-               let receiverList:[CKRecord.Reference] = friendList.filter { friend in
-                   receivers.contains(friend.userID)
-               }.compactMap { friend in
-                   friend.userRef
+               getUserIDs(receivers: [senderId]) { result in
+                   switch result {
+                   case .success(let senders):
+                       let senderId  = senders[0]
+                       self.getUserIDs(receivers: receivers) { result in
+                           Task {
+                               print("Completou getFriendIds")
+                               switch result {
+                               case .success(let receivers):
+                                   print("A logica vai aqui para \(receivers)")
+                                   do {
+                                       let (fileURL, mediaType) = try self.prepareMediaForUpload(image: image, videoURL: videoURL)
+                                       
+                                       let record = CKRecord(recordType: "Media")
+                                       
+                                       record["sender"] = CKRecord.Reference(recordID: senderId, action: .none)
+                                       
+                                       let references = receivers.map { CKRecord.Reference(recordID: $0, action: .none) }
+                                       
+                                       record["receiver"] = references
+                                       record["type"] = mediaType
+                                       record["file"] = CKAsset(fileURL: fileURL)
+                                       
+                                       _ = try await self.mediaService.save(record: record)
+                                       print("midia enviada com sucesso!")
+                                   } catch {
+                                       print("Erro ao enviar mídia: \(error)")
+                                   }
+                               case .failure(let error):
+                                   print("Erro \(error)")
+                               }
+                           }
+                       }
+                   case .failure(let error):
+                       print("Erro \(error)")
+                   }
                }
                
-               do {
-                   let (fileURL, mediaType) = try prepareMediaForUpload(image: image, videoURL: videoURL)
-                   let mediaObject = Media(
-                       type: mediaType,
-                       file: CKAsset(fileURL: fileURL),
-                       sender: senderId,
-                       receiver: receiverList
-                   )
-                   _ = try await mediaService.save(media: mediaObject)
-               } catch {
-                   print("Erro ao enviar mídia: \(error)")
-               }
+               
+               
+               
+               
+               
+              
+               
+              
+              // guard let senderId = userManager?.currentUser?.userRef else { return }
+//               let receiverList:[CKRecord.Reference] = friendList.filter { friend in
+//                   receivers.contains(friend.userID)
+//               }.compactMap { friend in
+//                   friend.userRef
+//               }
+//               print(" Amigos selecionados para envio: \(receiverList.count)")
+//                      if receiverList.isEmpty && !receivers.isEmpty {
+//                          print("A lista de destinatários (receiverList) está vazia, mesmo com IDs selecionados.")
+//                      }
+ 
            }
+        
+
        }
     
     private func prepareMediaForUpload(image: UIImage?, videoURL: URL?) throws -> (url: URL, type: String) {
@@ -102,7 +165,7 @@ class ChatViewModel: ObservableObject {
                }
                let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".jpg")
                try data.write(to: fileURL)
-               return (fileURL, "image")
+               return (fileURL, "photo")
            }
            if let videoURL = videoURL {
                return (videoURL, "video")
