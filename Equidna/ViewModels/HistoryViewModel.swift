@@ -163,7 +163,7 @@ public final class HistoryViewModel: ObservableObject {
 
     // MARK: - CloudKit
 
-    private func fetchPhotos() {
+    private func fetchPhotos() -> Void {
         isLoading = true; error = nil
         let group = DispatchGroup()
         var allRecords: [CKRecord] = []
@@ -240,6 +240,39 @@ public final class HistoryViewModel: ObservableObject {
         }
     }
 
+    func cacheLatestPhotos() {
+        let defaults = UserDefaults(suiteName: "group.Gardinidev.EquidnaApp")
+
+        // pega as 4 primeiras (já presumindo que `items` esteja ordenado por data desc)
+        let lastFour = Array(self.items.prefix(4))
+        print("cacheLatestPhotos: items=\(self.items.count)")
+        print("cacheLatestPhotos: lastFour=\(lastFour.count)")
+
+        // salva os IDs (útil se o widget precisar só referenciar)
+        let ids = lastFour.map { $0.id.recordName }
+        defaults?.set(ids, forKey: "latestPhotoIDs")
+
+        // salva os dados binários das imagens (se disponíveis)
+        let datas: [Data] = lastFour.compactMap { item in
+            guard let url = item.asset?.fileURL else { return nil }
+            return try? Data(contentsOf: url)
+        }
+        defaults?.set(datas, forKey: "latestPhotoDatas")
+        
+        // se quiser salvar também as datas ou amigos, pode criar um dicionário extra
+        let meta: [[String: Any]] = lastFour.map { item in
+            [
+                "id": item.id.recordName,
+                "friendInitials": item.friend.initials,
+                "date": item.date,
+                "type": item.type.rawValue
+            ]
+        }
+        defaults?.set(meta, forKey: "latestPhotoMeta")
+        
+        print("[HistoryVM] cacheLatestPhotos() Salvas n=\(datas.count) fotos em cache")
+    }
+    
     private func buildOutput(from records: [CKRecord]) {
         print("[HistoryVM] buildOutput(records: \(records.count))")
 
@@ -300,6 +333,9 @@ public final class HistoryViewModel: ObservableObject {
             }
 
             self.isLoading = false
+            
+            print("Ultima etapa de buildOutput: chamada de cacheLatestPhotos")
+            cacheLatestPhotos()
         }
     }
 

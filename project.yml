@@ -30,10 +30,13 @@ targets:
           - CloudKit
         com.apple.security.application-groups:
           - group.Gardinidev.EquidnaApp
+        com.apple.backgroundtask.scheduler: true
     settings:
       base:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription: "Precisamos salvar suas fotos/vídeos no app Fotos."
+        INFOPLIST_KEY_UIBackgroundModes:
+          - fetch
         PRODUCT_BUNDLE_IDENTIFIER: gardinidev.EquidnaApp
         GENERATE_INFOPLIST_FILE: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -54,14 +57,14 @@ targets:
     dependencies:
       - target: EquidnaApp
 
-  WidgetEquidna:
+  WidgetApp:
     type: app-extension
     platform: iOS
     sources:
-      - path: WidgetEquidna
+      - path: WidgetApp
     entitlements:
       generate: true
-      path: WidgetEquidna/WidgetEquidna.entitlements
+      path: WidgetApp/WidgetApp.entitlements
       properties:
         com.apple.security.application-groups:
           - group.Gardinidev.EquidnaApp
@@ -69,7 +72,7 @@ targets:
       base:
         GENERATE_INFOPLIST_FILE: YES
         CURRENT_PROJECT_VERSION: 0.1
-        PRODUCT_BUNDLE_IDENTIFIER: gardinidev.WidgetEquidna
+        PRODUCT_BUNDLE_IDENTIFIER: gardinidev.WidgetApp
         # INFOPLIST_KEY_NSExtension:
         #   NSExtensionPointIdentifier: com.apple.widgetkit-extension
         #   NSExtensionPrincipalClass: ""
