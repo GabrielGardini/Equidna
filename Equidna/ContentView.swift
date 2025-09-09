@@ -18,14 +18,20 @@ struct ContentView: View {
         Group {
             if userManager.isLoading {
                 ProgressView("Conectando ao iCloud...")
-            } else if let user = userManager.currentUser {
-                NavigationStack{
-                    ProfileView(userID: user.id)
-                }
+            } else if let _ = userManager.currentUser {
+                   TabBarView()
+                     //   .navigationBarHidden(true)
+                
             } else if let errorMessage = userManager.errorMessage {
                 Text("Erro: \(errorMessage)")
+            } else {
+                // fallback: se não tem usuário, ainda abre o RegisterView
+                NavigationStack {
+                    Text("Testando")
+//                    RegisterView()
+//                        .navigationBarHidden(true)
+                }
             }
         }
     }
 }
-

@@ -13,10 +13,12 @@ struct TabBarView: View {
     var body: some View {
         TabView {
             Tab("Registrar", systemImage: "plus.square.on.square") {
-                CameraView(userManager: userManager)
-                    .environmentObject(userManager)
+                NavigationStack {
+                    RegisterView(userManager: userManager)
+                        .environmentObject(userManager)
+                }
             }
-            Tab("Histórico", systemImage: "photo.on.rectangle.angled") {
+            Tab("Mural", systemImage: "photo.on.rectangle.angled") {
                 if let user = userManager.currentUser {
                     HistoryView(meUserID: user.id)
                 } else {
@@ -24,7 +26,13 @@ struct TabBarView: View {
                 }
             }
             Tab("Perfil", systemImage: "person.crop.circle") {
-                ContentView()
+                NavigationStack {
+                    if let userId = userManager.currentUser?.id {
+                        ProfileView(userID:userId)
+                    } else {
+                        Text("Sem usuario")
+                    }
+                }
             }
         }
     }
