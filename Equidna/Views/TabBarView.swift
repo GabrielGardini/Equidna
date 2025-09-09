@@ -15,7 +15,7 @@ struct TabBarView: View {
             Tab("Registrar", systemImage: "plus.square.on.square") {
                 NavigationStack {
                     RegisterView(userManager: userManager)
-                        .environmentObject(userManager)
+                       .environmentObject(userManager)
                 }
             }
             Tab("Mural", systemImage: "photo.on.rectangle.angled") {

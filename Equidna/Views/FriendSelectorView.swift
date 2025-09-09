@@ -18,6 +18,17 @@ struct FriendSelectorView: View {
    // @State private var selectedFriends: Set<String> = []
     @Environment(\.presentationMode) var presentationMode
     
+
+    
+    init(viewModel: ChatViewModel, currentUser: User, image: UIImage?, videoURL: URL?) {
+        print("Cheguei aqui com \(image)")
+        self.viewModel = viewModel
+        self.currentUser = currentUser
+        self.image = image
+        self.videoURL = videoURL
+    }
+    
+    
     private func toggleSelection(_ friend: User) {
         
         guard let friendRef = friend.userRef else { return }
@@ -54,6 +65,7 @@ struct FriendSelectorView: View {
                     }
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button("Enviar") {
+                            print("Tentando enviar. A imagem é nula? \(self.image == nil)")
                             guard let senderRef = currentUser.userRef else {
                                 print("Erro: A referência do usuário não foi encontrada. Impossível enviar.")
                                 presentationMode.wrappedValue.dismiss()
