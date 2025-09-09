@@ -8,6 +8,16 @@
 import SwiftUI
 
 struct RegisterView: View {
+    @EnvironmentObject var userManager: UserManager
+       
+       @State private var isShowingMediaPicker = false
+    //   @State private var videoURL: URL?
+       @State private var showEnvio = false
+       @StateObject private var viewModel: ChatViewModel
+       
+       init(userManager: UserManager) {
+           _viewModel = StateObject(wrappedValue: ChatViewModel(userManager: userManager))
+       }
     @State private var showCamera = false
     @State private var selectedImage: UIImage? = nil
     @State private var videoURL: URL? = nil
@@ -19,17 +29,6 @@ struct RegisterView: View {
                 .foregroundColor(.gray)
             
             Spacer()
-            // Título
-     //       Text("Registrar")
-       //         .font(.largeTitle)
-         //       .bold()
-           //     .padding(.top, 20)
-            
-            // Subtítulo
-//            Text("Transforme o cotidiano em memórias")
-//                .font(.subheadline)
-//                .foregroundColor(.gray)
-            
             // Botões principais
             VStack(spacing: 16) {
                 
@@ -49,8 +48,58 @@ struct RegisterView: View {
                         selectedImage: $selectedImage,
                         videoURL: $videoURL,
                         sourceType: .camera
-                    )
+                    ) .ignoresSafeArea()
                 }
+                .onChange(of: selectedImage) {
+                    if selectedImage != nil || videoURL != nil {
+                        showEnvio = true
+                    }
+                }
+                .onChange(of: videoURL) {
+                    if selectedImage != nil || videoURL != nil {
+                        showEnvio = true
+                    }
+                }
+                .sheet(isPresented: $showEnvio, onDismiss: resetMedia) {
+                    if let user = userManager.currentUser {
+                        FriendSelectorView(
+                            viewModel: viewModel,
+                            currentUser: user,
+                            image: selectedImage,
+                            videoURL: videoURL
+                        )
+                        .environmentObject(userManager)
+                        .onAppear() {
+                            print("--- Abrindo a tela de envio ---")
+                            print("A 'selectedImage' na RegisterView é nula? \(selectedImage == nil)")
+                        }
+                    }
+                    
+                }
+            
+                .onAppear {
+                    if viewModel.userManager == nil {
+                        viewModel.userManager = userManager
+                    }
+                }
+             
+//                func handleMediaChange() {
+//                     if inputImage != nil || videoURL != nil {
+//                         showEnvio = true
+//                     }
+//                 }
+            
+            //teste sem private
+//           private func handleMediaChange() {
+//                if inputImage != nil || videoURL != nil {
+//                    showEnvio = true
+//                }
+//            }
+//            // teste sem private
+//            func resetMedia() {
+//                inputImage = nil
+//                videoURL = nil
+//            }
                 
                 // Áudio
                 Button {
@@ -99,4 +148,14 @@ struct RegisterView: View {
 //            TabBarView()
 //        }
     }
+    private func handleMediaChange() {
+         if selectedImage != nil || videoURL != nil {
+             showEnvio = true
+         }
+     }
+     // teste sem private
+     private func resetMedia() {
+         selectedImage = nil
+         videoURL = nil
+     }
 }

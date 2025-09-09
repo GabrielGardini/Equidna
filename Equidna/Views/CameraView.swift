@@ -9,15 +9,24 @@ import SwiftUI
 import AVKit
 
 struct CameraView: View {
+    
+    @EnvironmentObject var userManager: UserManager
+    
     @State private var isShowingMediaPicker = false
-    @State private var inputImage: UIImage?
+    @State private var selectedImage: UIImage?
     @State private var videoURL: URL?
-
+    @State private var showEnvio = false
+    @StateObject private var viewModel: ChatViewModel
+    
+    init(userManager: UserManager) {
+        _viewModel = StateObject(wrappedValue: ChatViewModel(userManager: userManager))
+    }
+    
     var body: some View {
         NavigationView {
             VStack(spacing: 30) {
                 
-                if let inputImage = inputImage {
+                if let inputImage = selectedImage {
                     Image(uiImage: inputImage)
                         .resizable()
                         .scaledToFit()
@@ -34,13 +43,13 @@ struct CameraView: View {
                 }
                 
                 Button {
-                    self.inputImage = nil
+                    self.selectedImage = nil
                     self.videoURL = nil
                     self.isShowingMediaPicker = true
                 } label: {
                     HStack {
                         Image(systemName: "camera.fill")
-                        Text("Abrir Câmera")
+                        Text("Câmera")
                     }
                     .padding()
                     .background(Color.blue)
@@ -49,16 +58,43 @@ struct CameraView: View {
                 }
             }
             .padding()
-            .navigationTitle("Camera")
+            .navigationTitle("Registrar")
             .fullScreenCover(isPresented: $isShowingMediaPicker) {
-                MediaPicker(selectedImage: $inputImage, videoURL: $videoURL, sourceType: .camera)
+                MediaPicker(selectedImage: $selectedImage, videoURL: $videoURL, sourceType: .camera)
                     .ignoresSafeArea()
             }
+            .onChange(of: selectedImage) { _ in handleMediaChange() }
+            .onChange(of: videoURL) { _ in handleMediaChange() }
+            .sheet(isPresented: $showEnvio, onDismiss: resetMedia) {
+                if let user = userManager.currentUser {
+                    FriendSelectorView(
+                        viewModel: viewModel,
+                        currentUser: user,
+                        image: selectedImage,
+                        videoURL: videoURL
+                    )
+                    .environmentObject(userManager)
+                }
+            }
+        }
+            .onAppear {
+                if viewModel.userManager == nil {
+                    viewModel.userManager = userManager
+                }
+            }
+        }
+        
+        
+        private func handleMediaChange() {
+            if selectedImage != nil || videoURL != nil {
+                showEnvio = true
+            }
+        }
+        
+        private func resetMedia() {
+            selectedImage = nil
+            videoURL = nil
         }
     }
-}
+    
 
-#Preview {
-    CameraView()
-}
- 
