@@ -70,7 +70,7 @@ targets:
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
-        CURRENT_PROJECT_VERSION: 0.1
+        CURRENT_PROJECT_VERSION: 1
         PRODUCT_BUNDLE_IDENTIFIER: gardinidev.WidgetApp
         # INFOPLIST_KEY_NSExtension:
         #   NSExtensionPointIdentifier: com.apple.widgetkit-extension
