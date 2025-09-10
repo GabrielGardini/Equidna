@@ -30,7 +30,6 @@ targets:
           - CloudKit
         com.apple.security.application-groups:
           - group.Gardinidev.EquidnaApp
-        com.apple.backgroundtask.scheduler: true
     settings:
       base:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
@@ -42,7 +41,7 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         PRODUCT_NAME: Equidna
-        CURRENT_PROJECT_VERSION: 0.1
+        CURRENT_PROJECT_VERSION: 1
     dependencies: []
 
   EquidnaTests:
@@ -77,6 +76,8 @@ targets:
         #   NSExtensionPointIdentifier: com.apple.widgetkit-extension
         #   NSExtensionPrincipalClass: ""
         INFOPLIST_KEY_CFBundleDisplayName: "My Widget"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        
     dependencies:
       - target: EquidnaApp
       - framework: WidgetKit
