@@ -2,6 +2,12 @@ import Foundation
 import CloudKit
 import SwiftUI
 
+// URL do App Group
+let appGroupID = "group.Gardinidev.EquidnaApp"
+let fileManager = FileManager.default
+let containerURL = fileManager.containerURL(forSecurityApplicationGroupIdentifier: appGroupID)!
+let keyOnAssets = "latestPhotoAssets"
+
 // MARK: - Tipos / Modelos
 
 public enum MediaType: String { case photo, video, audio, text }
@@ -24,6 +30,20 @@ public struct HistoryItem: Identifiable, Hashable {
     public let asset: CKAsset?
     public init(id: CKRecord.ID, friend: Friend, type: MediaType, date: Date, asset: CKAsset?) {
         self.id = id; self.friend = friend; self.type = type; self.date = date; self.asset = asset
+    }
+}
+
+// Struct serializável para/de cache
+struct AssetInfo: Codable, Identifiable {
+    let id: String
+    let friend: String
+    let date: Date
+    let type: String
+    let thumbnailPath: String?
+    
+    var thumbnailImage: UIImage? {
+        guard let path = thumbnailPath else { return nil }
+        return UIImage(contentsOfFile: path)
     }
 }
 
@@ -240,37 +260,75 @@ public final class HistoryViewModel: ObservableObject {
         }
     }
 
-    func cacheLatestPhotos() {
-        let defaults = UserDefaults(suiteName: "group.Gardinidev.EquidnaApp")
+    // Função utilitária para redimensionar/comprimir e salvar no App Group
+    func saveThumbnail(from url: URL, targetSize: CGSize, compression: CGFloat = 0.7, filename: String) -> String? {
+        guard let bigImage = UIImage(contentsOfFile: url.path) else { return nil }
+        
+        let smallImage = resizedImage(bigImage, targetSize: targetSize)
+        
+        guard let data = smallImage.jpegData(compressionQuality: compression) else { return nil }
+        
+        // Caminho no container do App Group
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) else {
+            return nil
+        }
+        
+        let fileURL = containerURL.appendingPathComponent("\(filename).jpg")
+        
+        // Remove arquivo antigo, se existir
+        try? FileManager.default.removeItem(at: fileURL)
+        
+        // Salva thumbnail
+        do {
+            try data.write(to: fileURL)
+            return fileURL.path // retorna o caminho para salvar no AssetInfo
+        } catch {
+            print("Erro ao salvar thumbnail: \(error)")
+            return nil
+        }
+    }
 
-        // pega as 4 primeiras (já presumindo que `items` esteja ordenado por data desc)
+    func cacheLatestPhotos() {
+        let defaults = UserDefaults(suiteName: appGroupID)
+        
         let lastFour = Array(self.items.prefix(4))
         print("cacheLatestPhotos: items=\(self.items.count)")
         print("cacheLatestPhotos: lastFour=\(lastFour.count)")
-
-        // salva os IDs (útil se o widget precisar só referenciar)
-        let ids = lastFour.map { $0.id.recordName }
-        defaults?.set(ids, forKey: "latestPhotoIDs")
-
-        // salva os dados binários das imagens (se disponíveis)
-        let datas: [Data] = lastFour.compactMap { item in
+        
+        let fullAssets: [AssetInfo] = lastFour.compactMap { item in
             guard let url = item.asset?.fileURL else { return nil }
-            return try? Data(contentsOf: url)
+            
+            // Salva thumbnail no App Group e guarda só o caminho
+            let thumbnailPath = saveThumbnail(
+                from: url,
+                targetSize: CGSize(width: 200, height: 200),
+                compression: 0.7,
+                filename: item.id.recordName
+            )
+            
+            return AssetInfo(
+                id: item.id.recordName,
+                friend: item.friend.name,
+                date: item.date,
+                type: item.type.rawValue,
+                thumbnailPath: thumbnailPath
+            )
         }
-        defaults?.set(datas, forKey: "latestPhotoDatas")
         
-        // se quiser salvar também as datas ou amigos, pode criar um dicionário extra
-        let meta: [[String: Any]] = lastFour.map { item in
-            [
-                "id": item.id.recordName,
-                "friendInitials": item.friend.initials,
-                "date": item.date,
-                "type": item.type.rawValue
-            ]
+        let encoder = JSONEncoder()
+        if let encoded = try? encoder.encode(fullAssets) {
+            defaults?.set(encoded, forKey: keyOnAssets)
         }
-        defaults?.set(meta, forKey: "latestPhotoMeta")
         
-        print("[HistoryVM] cacheLatestPhotos() Salvas n=\(datas.count) fotos em cache")
+        print("[HistoryVM] cacheLatestPhotos() Salvas n=\(fullAssets.count) fotos em cache")
+    }
+    
+    // Função de resize
+    private func resizedImage(_ image: UIImage, targetSize: CGSize) -> UIImage {
+        let renderer = UIGraphicsImageRenderer(size: targetSize)
+        return renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: targetSize))
+        }
     }
     
     private func buildOutput(from records: [CKRecord]) {

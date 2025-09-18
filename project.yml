@@ -77,7 +77,8 @@ targets:
         #   NSExtensionPrincipalClass: ""
         INFOPLIST_KEY_CFBundleDisplayName: "My Widget"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        
     dependencies:
+      - sdk: SwiftUI.framework
+      - sdk: WidgetKit.framework
       - target: EquidnaApp
-      - framework: WidgetKit
+      # - framework: WidgetKit
