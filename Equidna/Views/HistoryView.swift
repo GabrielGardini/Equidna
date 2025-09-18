@@ -21,27 +21,6 @@ struct HistoryView: View {
                         .font(.title3)
                         .foregroundColor(.secondary)
 
-                    // Botão "Filtrar" centralizado
-                    HStack {
-                        Spacer()
-                        Button {
-                            showFilter = true
-                        } label: {
-                            HStack(spacing: 8) {
-                                Image(systemName: "line.3.horizontal.decrease.circle.fill")
-                                Text(filterLabel).fontWeight(.semibold)
-                            }
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 14)
-                            .background(Color.accentColor)
-                            .foregroundColor(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                        }
-                        Spacer()
-                    }
-                    .padding(.top, 8)
-                    .padding(.bottom, 16)
-
                     // Grade
                     LazyVGrid(columns: cols, spacing: 12) {
                         ForEach(vm.filteredItems, id: \.id) { item in
@@ -60,6 +39,18 @@ struct HistoryView: View {
                 .padding(.bottom, 20)
             }
             .navigationTitle("Mural")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showFilter = true
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "line.3.horizontal.decrease.circle.fill")
+                            Text(filterLabel).fontWeight(.semibold)
+                        }
+                    }
+                }
+            }
             .onAppear { vm.loadUsingCurrentiCloudUser() }
             .sheet(isPresented: $showFilter) {
                 FilterSheet(
