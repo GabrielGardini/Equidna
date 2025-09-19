@@ -42,7 +42,10 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         PRODUCT_NAME: Equidna
         CURRENT_PROJECT_VERSION: 1
-    dependencies: []
+    dependencies:
+      - sdk: SwiftUI.framework
+      - sdk: CloudKit.framework
+      - target: Shared
 
   EquidnaTests:
     type: bundle.unit-test
@@ -55,6 +58,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: gardinidev.EquidnaTests
     dependencies:
       - target: EquidnaApp
+      - target: Shared
 
   WidgetApp:
     type: app-extension
@@ -81,4 +85,15 @@ targets:
       - sdk: SwiftUI.framework
       - sdk: WidgetKit.framework
       - target: EquidnaApp
+      - target: Shared
       # - framework: WidgetKit
+
+  Shared:
+    type: framework
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: Equidna/ViewModels/HistoryViewModel.swift
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
