@@ -10,17 +10,23 @@ import SwiftUI
 struct RegisterView: View {
     @EnvironmentObject var userManager: UserManager
        
-       @State private var isShowingMediaPicker = false
-    //   @State private var videoURL: URL?
-       @State private var showEnvio = false
-       @StateObject private var viewModel: ChatViewModel
+    @State private var isShowingMediaPicker = false
+    @State private var showEnvio = false
+    @StateObject private var viewModel: ChatViewModel
        
-       init(userManager: UserManager) {
-           _viewModel = StateObject(wrappedValue: ChatViewModel(userManager: userManager))
-       }
+    init(userManager: UserManager) {
+        _viewModel = StateObject(wrappedValue: ChatViewModel(userManager: userManager))
+    }
+
     @State private var showCamera = false
     @State private var selectedImage: UIImage? = nil
     @State private var videoURL: URL? = nil
+
+    // --- ADD: estados para áudio ---
+    @State private var showAudioRecorder = false
+    @State private var recordedAudioURL: URL? = nil
+    @State private var recordedAudioDuration: TimeInterval = 0
+    // -------------------------------
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -48,7 +54,8 @@ struct RegisterView: View {
                         selectedImage: $selectedImage,
                         videoURL: $videoURL,
                         sourceType: .camera
-                    ) .ignoresSafeArea()
+                    )
+                    .ignoresSafeArea()
                 }
                 .onChange(of: selectedImage) {
                     if selectedImage != nil || videoURL != nil {
@@ -66,7 +73,9 @@ struct RegisterView: View {
                             viewModel: viewModel,
                             currentUser: user,
                             image: selectedImage,
-                            videoURL: videoURL
+                            videoURL: videoURL,
+                            audioURL: recordedAudioURL,                 // ADD
+                            audioDuration: recordedAudioDuration        // ADD
                         )
                         .environmentObject(userManager)
                         .onAppear() {
@@ -74,36 +83,16 @@ struct RegisterView: View {
                             print("A 'selectedImage' na RegisterView é nula? \(selectedImage == nil)")
                         }
                     }
-                    
                 }
-            
                 .onAppear {
                     if viewModel.userManager == nil {
                         viewModel.userManager = userManager
                     }
                 }
-             
-//                func handleMediaChange() {
-//                     if inputImage != nil || videoURL != nil {
-//                         showEnvio = true
-//                     }
-//                 }
-            
-            //teste sem private
-//           private func handleMediaChange() {
-//                if inputImage != nil || videoURL != nil {
-//                    showEnvio = true
-//                }
-//            }
-//            // teste sem private
-//            func resetMedia() {
-//                inputImage = nil
-//                videoURL = nil
-//            }
                 
                 // Áudio
                 Button {
-                    print("Áudio ainda não implementado")
+                    showAudioRecorder = true                      // ADD
                 } label: {
                     RegisterCardView(
                         title: "Audio",
@@ -112,7 +101,16 @@ struct RegisterView: View {
                         backgroundImage: "bg_audio"
                     ).background(.white)
                 }
-                
+                .fullScreenCover(isPresented: $showAudioRecorder) { // ADD
+                    AudioRecorderView { url, duration in
+                        recordedAudioURL = url
+                        recordedAudioDuration = duration
+                        showAudioRecorder = false
+                        showEnvio = true                           // abre o mesmo fluxo de envio
+                    }
+                    .ignoresSafeArea()
+                }
+
                 // Desenho
                 Button {
                     print("Desenho ainda não implementado")
@@ -143,19 +141,20 @@ struct RegisterView: View {
         .padding(.horizontal, 20)
         .padding(.bottom, 60) // espaço para TabBar
         .navigationTitle("Registrar")
-        //.navigationBarHidden(true)
-//        .safeAreaInset(edge: .bottom) {
-//            TabBarView()
-//        }
     }
+
     private func handleMediaChange() {
-         if selectedImage != nil || videoURL != nil {
-             showEnvio = true
-         }
-     }
-     // teste sem private
-     private func resetMedia() {
-         selectedImage = nil
-         videoURL = nil
-     }
+        if selectedImage != nil || videoURL != nil {
+            showEnvio = true
+        }
+    }
+
+    private func resetMedia() {
+        selectedImage = nil
+        videoURL = nil
+        // --- ADD: limpar estados de áudio ---
+        recordedAudioURL = nil
+        recordedAudioDuration = 0
+        // -----------------------------------
+    }
 }

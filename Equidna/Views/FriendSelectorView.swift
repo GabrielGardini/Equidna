@@ -13,76 +13,93 @@ struct FriendSelectorView: View {
     let currentUser: User
     let image: UIImage?
     let videoURL: URL?
-    
-    @State private var selectedFriends: Set<CKRecord.Reference> = []
-   // @State private var selectedFriends: Set<String> = []
-    @Environment(\.presentationMode) var presentationMode
-    
 
     
-    init(viewModel: ChatViewModel, currentUser: User, image: UIImage?, videoURL: URL?) {
-        print("Cheguei aqui com \(image)")
+    let audioURL: URL?
+    let audioDuration: TimeInterval?
+    // ---------------------------------------------------------------
+
+    @State private var selectedFriends: Set<CKRecord.Reference> = []
+    @Environment(\.presentationMode) var presentationMode
+
+    // init com defaults para os novos parâmetros
+    init(viewModel: ChatViewModel,
+         currentUser: User,
+         image: UIImage?,
+         videoURL: URL?,
+         audioURL: URL? = nil,
+         audioDuration: TimeInterval? = nil) {
+        print("Cheguei aqui com \(String(describing: image))")
         self.viewModel = viewModel
         self.currentUser = currentUser
         self.image = image
         self.videoURL = videoURL
+        self.audioURL = audioURL
+        self.audioDuration = audioDuration
     }
-    
-    
+
     private func toggleSelection(_ friend: User) {
-        
         guard let friendRef = friend.userRef else { return }
-        
         if selectedFriends.contains(friendRef) {
             selectedFriends.remove(friendRef)
         } else {
             selectedFriends.insert(friendRef)
         }
     }
-    
+
     var body: some View {
         NavigationView {
-            List(viewModel.friendList, id: \User.id) { friend in
+            List(viewModel.friendList, id: \.id) { friend in      // <-- FIX: \.id
                 Button(action: {
                     toggleSelection(friend)
                 }) {
                     HStack {
                         Text(friend.fullName)
                         Spacer()
-                        if selectedFriends.contains(friend.userRef!) {
+                        if let ref = friend.userRef, selectedFriends.contains(ref) {
                             Image(systemName: "checkmark.circle.fill")
                         }
                     }
                 }
-            }  .onAppear {
+            }
+            .onAppear {
                 viewModel.fetchFriends()
-            }.navigationTitle("Enviar Para")
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        Button("Cancelar") {
-                            presentationMode.wrappedValue.dismiss()
-                        }
-                    }
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Enviar") {
-                            print("Tentando enviar. A imagem é nula? \(self.image == nil)")
-                            guard let senderRef = currentUser.userRef else {
-                                print("Erro: A referência do usuário não foi encontrada. Impossível enviar.")
-                                presentationMode.wrappedValue.dismiss()
-                                return
-                            }
-                            viewModel.sendMedia(
-                                image: image,
-                                videoURL: videoURL,
-                                to: Array(selectedFriends)
-                            )
-                            
-                            presentationMode.wrappedValue.dismiss()
-                        }
-                        .disabled(selectedFriends.isEmpty)
+            }
+            .navigationTitle("Enviar Para")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Text("Cancelar")
                     }
                 }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        print("Tentando enviar. A imagem é nula? \(self.image == nil)")
+                        guard currentUser.userRef != nil else {
+                            print("Erro: A referência do usuário não foi encontrada. Impossível enviar.")
+                            presentationMode.wrappedValue.dismiss()
+                            return
+                        }
+                        viewModel.sendMedia(
+                            image: image,
+                            videoURL: videoURL,
+                            audioURL: audioURL,                 // passa áudio se houver
+                            audioDuration: audioDuration,       // passa duração se houver
+                            to: Array(selectedFriends)
+                        )
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Text("Enviar")
+                    }
+                    .disabled(selectedFriends.isEmpty)
+                }
+            }
         }
+    }
+}
+
         
         //            List(viewModel.friendList, id: \User.id) { friend in
         //                Button(action: {
@@ -129,8 +146,8 @@ struct FriendSelectorView: View {
         //                viewModel.fetchFriends()
         //            }
         
-    }
-}
+   // }
+//}
 //
 //func toggleSelection(for friendReference: CKRecord.Reference) {
 //    if selectedFriends.contains(friendReference) {
