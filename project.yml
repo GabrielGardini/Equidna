@@ -89,7 +89,7 @@ targets:
       # - framework: WidgetKit
 
   Shared:
-    type: framework
+    type: library.static
     platform: iOS
     deploymentTarget: "18.0"
     sources:
