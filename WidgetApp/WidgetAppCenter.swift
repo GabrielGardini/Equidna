@@ -8,50 +8,47 @@
 import WidgetKit
 import SwiftUI
 import AppIntents
+import CloudKit
 
-// MARK: - TimelineEntry
-struct EquidnaEntry: TimelineEntry {
-    let date: Date
-    let images: [UIImage]
-    let contacts: [String]
-    let selectedIndex: Int
-}
+
+let contactsPlaceholder: [String] = ["Gabriel Gardini", "Camille Luppi", "Rodrigo Cont", "Gabriel Rugeri"]
 
 // MARK: - Provider (TimelineProvider)
+struct AssetEntry: TimelineEntry {
+    let date: Date
+    let assets: [AssetInfo]
+    let selectedIndex: Int = 0
+}
+
+struct ThumbnailDisplay: Identifiable {
+    let id: String
+    let friend: String
+    let image: UIImage
+}
+
+
 struct Provider: TimelineProvider {
-    // Atualização a cada N horas
-    let refreshFrequency: Int = 6
-
-    func placeholder(in context: Context) -> EquidnaEntry {
-        EquidnaEntry(
-            date: Date(),
-            images: loadLatestPhotos(),
-            contacts: loadContactsPlaceholder(),
-            selectedIndex: loadSelectedIndex()
-        )
+    func placeholder(in context: Context) -> AssetEntry {
+        AssetEntry(date: Date(), assets: [])
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (EquidnaEntry) -> Void) {
-        let images = loadLatestPhotos()
-        let contacts = loadContactsPlaceholder()
-        let selected = loadSelectedIndex()
-        completion(EquidnaEntry(date: Date(), images: images, contacts: contacts, selectedIndex: selected))
+    func getSnapshot(in context: Context, completion: @escaping (AssetEntry) -> ()) {
+        let assets = loadCachedAssets()
+        completion(AssetEntry(date: Date(), assets: assets))
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<EquidnaEntry>) -> Void) {
-        let images = loadLatestPhotos()
-        let contacts = loadContactsPlaceholder()
-        let selected = loadSelectedIndex()
-
-        let entry = EquidnaEntry(date: Date(), images: images, contacts: contacts, selectedIndex: selected)
-        let refreshDate = Calendar.current.date(byAdding: .hour, value: refreshFrequency, to: Date())!
-        completion(Timeline(entries: [entry], policy: .after(refreshDate)))
+    func getTimeline(in context: Context, completion: @escaping (Timeline<AssetEntry>) -> ()) {
+        let assets = loadCachedAssets()
+        let entry = AssetEntry(date: Date(), assets: assets)
+        let timeline = Timeline(entries: [entry], policy: .atEnd)
+        completion(timeline)
     }
 }
+
 
 // MARK: - Widget Views
 struct EquidnaWidgetEntryView: View {
-    var entry: EquidnaEntry
+    var entry: AssetEntry
     var maxImages: Int = 4
     var showContacts: Bool = false
 
@@ -61,12 +58,12 @@ struct EquidnaWidgetEntryView: View {
                 // MEDIUM 2x4 — 50/50 (esquerda imagem, direita lista tocável)
                 HStack(spacing: 0) {
                     // Escolhe a mídia conforme seleção
-                    let imageToShow = entry.images[safe: entry.selectedIndex] ?? entry.images.first
+                    let imageToShow = entry.assets[safe: entry.selectedIndex]?.thumbnailImage ?? entry.assets.first?.thumbnailImage
                     MediaPane(image: imageToShow)
                         .frame(width: geo.size.width * 0.5, height: geo.size.height)
 
                     ContactListView(
-                        contacts: entry.contacts,
+                        contacts: entry.assets.compactMap(\.friend),
                         maxItems: maxImages,
                         selectedIndex: entry.selectedIndex
                     )
@@ -77,12 +74,13 @@ struct EquidnaWidgetEntryView: View {
             } else {
                 // SMALL 2x2 — imagem full + INICIAIS no topo esquerdo
                 ZStack(alignment: .topLeading) {
-                    let imageToShow = entry.images[safe: entry.selectedIndex] ?? entry.images.first
+                    let imageToShow = entry.assets[safe: entry.selectedIndex]?.thumbnailImage ?? entry.assets.first?.thumbnailImage
                     MediaPane(image: imageToShow)
                         .frame(width: geo.size.width, height: geo.size.height)
 
                     // Iniciais do contato selecionado (ou do primeiro)
-                    let selectedName = entry.contacts[safe: entry.selectedIndex] ?? entry.contacts.first ?? ""
+                    let friends = entry.assets.compactMap(\.friend)
+                    let selectedName = friends[safe: entry.selectedIndex] ?? friends.first ?? ""
                     let initials = makeInitials(from: selectedName)
 
                     Badge(initials: initials)
@@ -163,23 +161,48 @@ private struct Badge: View {
             .padding(.vertical, 6)
             .background(
                 Circle()
-                    .fill(Color.blue.opacity(0.9))
+                    .fill(Color.indigo.opacity(0.9))
                     .frame(width: 36, height: 36)
             )
     }
 }
 
 // MARK: - Helpers
-
-/// Carrega fotos do App Group (ou gera 4 cores de teste)
-func loadLatestPhotos() -> [UIImage] {
-    let defaults = UserDefaults(suiteName: "group.Gardinidev.EquidnaApp")
-    if let datas = defaults?.array(forKey: "latestPhotoDatas") as? [Data], !datas.isEmpty {
-        return datas.compactMap { UIImage(data: $0) }
+func loadCachedAssets() -> [AssetInfo] {
+    let defaults = UserDefaults(suiteName: appGroupID)
+    
+    guard let data = defaults?.data(forKey: keyOnAssets) else {
+        print("⚠️ Nenhum cache encontrado")
+        return []
     }
-    // Fallback de teste: 4 cores
+    
+    let decoder = JSONDecoder()
+    if let assets = try? decoder.decode([AssetInfo].self, from: data) {
+        print("✅ Carregado \(assets.count) assets do cache")
+        return assets
+    } else {
+        print("⚠️ Falha ao decodificar AssetInfo")
+        return []
+    }
+}
+
+/// Carrega thumbnails do App Group e retorna modelo de exibição
+func loadThumbnailDisplays() -> [ThumbnailDisplay] {
+    let assets = loadCachedAssets()
+    
+    let displays: [ThumbnailDisplay] = assets.compactMap { asset in
+        guard let path = asset.thumbnailPath,
+              let image = UIImage(contentsOfFile: path) else { return nil }
+        return ThumbnailDisplay(id: asset.id, friend: asset.friend, image: image)
+    }
+    
+    if !displays.isEmpty {
+        return displays
+    }
+    
+    // Fallback: thumbnails de cores com nomes genéricos
     func solid(_ color: UIColor) -> UIImage {
-        let size = CGSize(width: 200, height: 200)
+        let size = CGSize(width: 60, height: 60)
         UIGraphicsBeginImageContextWithOptions(size, false, 0)
         color.setFill()
         UIRectFill(CGRect(origin: .zero, size: size))
@@ -187,16 +210,16 @@ func loadLatestPhotos() -> [UIImage] {
         UIGraphicsEndImageContext()
         return img!
     }
-    return [ solid(.red), solid(.green), solid(.blue), solid(.yellow) ]
+    
+    let fallbackColors: [UIColor] = [.red, .green, .blue, .yellow]
+    return fallbackColors.enumerated().map { index, color in
+        ThumbnailDisplay(id: "\(index)", friend: "Friend \(index + 1)", image: solid(color))
+    }
 }
 
-/// Placeholder de contatos (substitua quando for integrar com dados reais)
-func loadContactsPlaceholder() -> [String] {
-    ["Gabriel Gardini", "Camille Luppi", "Rodrigo Cont", "Gabriel Rugeri"]
-}
 
 func loadSelectedIndex() -> Int {
-    let defaults = UserDefaults(suiteName: "group.Gardinidev.EquidnaApp")
+    let defaults = UserDefaults(suiteName: appGroupID)
     return defaults?.integer(forKey: "selectedIndex") ?? 0
 }
 
@@ -259,11 +282,11 @@ struct WidgetMedium: Widget {
 #Preview(as: .systemSmall) {
     WidgetSmall()
 } timeline: {
-    EquidnaEntry(date: .now, images: loadLatestPhotos(), contacts: loadContactsPlaceholder(), selectedIndex: 0)
+    AssetEntry(date: .now, assets: loadCachedAssets())
 }
 
 #Preview(as: .systemMedium) {
     WidgetMedium()
 } timeline: {
-    EquidnaEntry(date: .now, images: loadLatestPhotos(), contacts: loadContactsPlaceholder(), selectedIndex: 1)
+    AssetEntry(date: .now, assets: loadCachedAssets())
 }
