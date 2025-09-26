@@ -6,21 +6,25 @@
 //
 
 import SwiftUI
+import AVKit
 
 struct RegisterView: View {
     @EnvironmentObject var userManager: UserManager
        
-       @State private var isShowingMediaPicker = false
-    //   @State private var videoURL: URL?
-       @State private var showEnvio = false
-       @StateObject private var viewModel: ChatViewModel
+    @State private var isShowingMediaPicker = false
+    @State private var showEnvio = false
+    @StateObject private var viewModel: ChatViewModel
        
-       init(userManager: UserManager) {
-           _viewModel = StateObject(wrappedValue: ChatViewModel(userManager: userManager))
-       }
+    init(userManager: UserManager) {
+        _viewModel = StateObject(wrappedValue: ChatViewModel(userManager: userManager))
+    }
+
     @State private var showCamera = false
     @State private var selectedImage: UIImage? = nil
     @State private var videoURL: URL? = nil
+
+    // NOVO: controla apresentação da tela de desenho
+    @State private var showDraw = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -29,9 +33,9 @@ struct RegisterView: View {
                 .foregroundColor(.gray)
             
             Spacer()
+
             // Botões principais
             VStack(spacing: 16) {
-                
                 // Câmera
                 Button {
                     showCamera = true
@@ -41,14 +45,16 @@ struct RegisterView: View {
                         subtitle: "Faça um instante virar presença",
                         icon: "camera",
                         backgroundImage: "bg_camera"
-                    ).background(.white)
+                    )
+                    .background(.white)
                 }
                 .fullScreenCover(isPresented: $showCamera) {
                     MediaPicker(
                         selectedImage: $selectedImage,
                         videoURL: $videoURL,
                         sourceType: .camera
-                    ) .ignoresSafeArea()
+                    )
+                    .ignoresSafeArea()
                 }
                 .onChange(of: selectedImage) {
                     if selectedImage != nil || videoURL != nil {
@@ -69,38 +75,18 @@ struct RegisterView: View {
                             videoURL: videoURL
                         )
                         .environmentObject(userManager)
-                        .onAppear() {
+                        .onAppear {
                             print("--- Abrindo a tela de envio ---")
                             print("A 'selectedImage' na RegisterView é nula? \(selectedImage == nil)")
                         }
                     }
-                    
                 }
-            
                 .onAppear {
                     if viewModel.userManager == nil {
                         viewModel.userManager = userManager
                     }
                 }
-             
-//                func handleMediaChange() {
-//                     if inputImage != nil || videoURL != nil {
-//                         showEnvio = true
-//                     }
-//                 }
-            
-            //teste sem private
-//           private func handleMediaChange() {
-//                if inputImage != nil || videoURL != nil {
-//                    showEnvio = true
-//                }
-//            }
-//            // teste sem private
-//            func resetMedia() {
-//                inputImage = nil
-//                videoURL = nil
-//            }
-                
+
                 // Áudio
                 Button {
                     print("Áudio ainda não implementado")
@@ -110,21 +96,28 @@ struct RegisterView: View {
                         subtitle: "Deixe sua voz mais perto",
                         icon: "mic",
                         backgroundImage: "bg_audio"
-                    ).background(.white)
+                    )
+                    .background(.white)
                 }
-                
-                // Desenho
+
+                // Desenho (AGORA ABRE A TELA)
                 Button {
-                    print("Desenho ainda não implementado")
+                    showDraw = true
                 } label: {
                     RegisterCardView(
                         title: "Desenho",
                         subtitle: "Compartilhe afeto em traços",
                         icon: "pencil.and.outline",
                         backgroundImage: "bg_desenho"
-                    ).background(.white)
+                    )
+                    .background(.white)
                 }
-                
+                .sheet(isPresented: $showDraw) {
+                    // DrawView usa o mesmo padrão MVVM interno dele
+                    DrawView(userManager: userManager)
+                        .environmentObject(userManager)
+                }
+
                 // Texto
                 Button {
                     print("Texto ainda não implementado")
@@ -134,28 +127,27 @@ struct RegisterView: View {
                         subtitle: "Envie mensagens que aproximam",
                         icon: "text.bubble",
                         backgroundImage: "bg_texto"
-                    ).background(.white)
+                    )
+                    .background(.white)
                 }
             }
-            
+
             Spacer()
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 60) // espaço para TabBar
         .navigationTitle("Registrar")
-        //.navigationBarHidden(true)
-//        .safeAreaInset(edge: .bottom) {
-//            TabBarView()
-//        }
     }
+
+    // MARK: - Helpers
     private func handleMediaChange() {
-         if selectedImage != nil || videoURL != nil {
-             showEnvio = true
-         }
-     }
-     // teste sem private
-     private func resetMedia() {
-         selectedImage = nil
-         videoURL = nil
-     }
+        if selectedImage != nil || videoURL != nil {
+            showEnvio = true
+        }
+    }
+
+    private func resetMedia() {
+        selectedImage = nil
+        videoURL = nil
+    }
 }
