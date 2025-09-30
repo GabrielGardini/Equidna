@@ -16,7 +16,9 @@ struct PencilCanvasView: UIViewRepresentable {
         canvas.backgroundColor = .systemBackground
         canvas.isOpaque = true
         canvas.drawing = drawing
-        // NÃO define delegate aqui; o VM assume no attach()
+      
+        // Nao define delegate
+    
         DispatchQueue.main.async { onReady(canvas) }
         return canvas
     }

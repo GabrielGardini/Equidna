@@ -34,13 +34,13 @@ struct DrawView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Canvas PencilKit
+                // Canvas
                 PencilCanvasView(drawing: $vm.drawing) { canvas in
-                    vm.attach(canvas: canvas)   // garante picker quando tiver window
+                    vm.attach(canvas: canvas)
                 }
                 .ignoresSafeArea(.keyboard, edges: .bottom)
 
-                // Dica quando vazio
+              // Sem desenho
                 if vm.isEmpty {
                     VStack(spacing: 8) {
                         Image(systemName: "applepencil")
@@ -54,7 +54,7 @@ struct DrawView: View {
             .navigationTitle("Desenho")
             .navigationBarTitleDisplayMode(.inline)
 
-            // Toolbar (layout da 1ª versão)
+           
             .toolbar {
                 ToolbarItemGroup(placement: .topBarLeading) {
                     Button {
@@ -91,7 +91,7 @@ struct DrawView: View {
                 }
             }
 
-            // Botão de envio fixo no rodapé (redundância confiável)
+            // Botao de envio
             .safeAreaInset(edge: .bottom) {
                 if !vm.isEmpty {
                     VStack {
@@ -113,7 +113,7 @@ struct DrawView: View {
                 }
             }
 
-            // Sheet: seleção de amigos (com usuário + imagem "congelados")
+            // Selecionar amigos
             .sheet(isPresented: $showFriendSelector, onDismiss: {
                 exportedImage = nil
                 sendUser = nil
@@ -142,13 +142,13 @@ struct DrawView: View {
                 vm.ensureToolPicker()
             }
             .onChange(of: scenePhase) { _ in
-                // recupera picker ao voltar do background
+                // Chama o picker de novo
                 vm.ensureToolPicker()
             }
         }
     }
 
-    // MARK: - Ações
+  
 
     private func triggerSend() {
         guard let img = vm.renderImage() else { return }
@@ -156,8 +156,11 @@ struct DrawView: View {
             print("Erro: currentUser indisponível no envio.")
             return
         }
-        exportedImage = img   // congela a imagem
-        sendUser = user       // congela o usuário
+        
+        // Congela a imagem e usuario
+        
+        exportedImage = img
+        sendUser = user
         showFriendSelector = true
     }
 }
